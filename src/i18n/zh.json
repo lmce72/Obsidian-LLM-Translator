@@ -95,7 +95,11 @@
     "open": "历史记录",
     "sort": "按时间排序",
     "sortDesc": "最新优先",
-    "sortAsc": "最早优先"
+    "sortAsc": "最早优先",
+    "sortSourceAsc": "原文 A→Z",
+    "sortSourceDesc": "原文 Z→A",
+    "sortTranslationAsc": "译文 A→Z",
+    "sortTranslationDesc": "译文 Z→A"
   },
   "popup": {
     "translating": "翻译中...",

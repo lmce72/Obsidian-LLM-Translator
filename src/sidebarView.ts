@@ -4,6 +4,7 @@ import type { TranslationLanguage, TranslationProviderId } from "./types";
 import { t } from "./i18n";
 import { HIGHLIGHT_COLOR_ORDER, getHighlightColor } from "./pdfHighlight/colors";
 import { SOURCE_LANGUAGES, TARGET_LANGUAGES } from "./languageOptions";
+import type { TranslationHistorySort } from "./translationHistory";
 
 export const PDF_OLLAMA_TRANSLATOR_VIEW_TYPE = "llm-translator-sidebar";
 
@@ -14,7 +15,7 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 	private resultOutputEl: HTMLElement | null = null;
 	private mode: SidebarMode = "translate";
 	private historyQuery = "";
-	private historySort: "asc" | "desc" = "desc";
+	private historySort: TranslationHistorySort = "time-desc";
 	private historySearchEl: HTMLInputElement | null = null;
 	private historyListEl: HTMLElement | null = null;
 
@@ -52,7 +53,7 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		// A fresh entry starts with the full, newest-first list; the search and
 		// sort state only persists across automatic refreshes while open.
 		this.historyQuery = "";
-		this.historySort = "desc";
+		this.historySort = "time-desc";
 		this.render();
 	}
 
@@ -114,7 +115,9 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		backButton.onClickEvent(() => this.showTranslator());
 
 		const titleEl = headerEl.createDiv({ cls: "pdf-ollama-translator-sidebar__title" });
-		const iconEl = titleEl.createSpan({ cls: "pdf-ollama-translator-sidebar__title-icon" });
+		const iconEl = titleEl.createSpan({
+			cls: "pdf-ollama-translator-sidebar__title-icon pdf-ollama-translator-history__title-icon",
+		});
 		setIcon(iconEl, "history");
 		titleEl.createSpan({ text: t("history.title"), cls: "pdf-ollama-translator-sidebar__title-text" });
 
@@ -134,16 +137,26 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		};
 		this.historySearchEl = searchEl;
 
-		const sortButton = toolbarEl.createEl("button", {
-			cls: "pdf-ollama-translator-sidebar__clear-button pdf-ollama-translator-history__sort",
-			text: this.historySort === "desc" ? t("history.sortDesc") : t("history.sortAsc"),
+		const sortEl = toolbarEl.createEl("select", {
+			cls: "pdf-ollama-translator-history__sort-select",
 			attr: { title: t("history.sort"), "aria-label": t("history.sort") },
 		});
-		sortButton.onClickEvent(() => {
-			this.historySort = this.historySort === "desc" ? "asc" : "desc";
-			sortButton.setText(this.historySort === "desc" ? t("history.sortDesc") : t("history.sortAsc"));
+		const sortOptions: Array<[TranslationHistorySort, string]> = [
+			["time-desc", t("history.sortDesc")],
+			["time-asc", t("history.sortAsc")],
+			["source-asc", t("history.sortSourceAsc")],
+			["source-desc", t("history.sortSourceDesc")],
+			["translation-asc", t("history.sortTranslationAsc")],
+			["translation-desc", t("history.sortTranslationDesc")],
+		];
+		for (const [value, label] of sortOptions) {
+			sortEl.createEl("option", { value, text: label });
+		}
+		sortEl.value = this.historySort;
+		sortEl.onchange = () => {
+			this.historySort = sortEl.value as TranslationHistorySort;
 			this.renderHistoryList();
-		});
+		};
 
 		const listEl = container.createDiv({ cls: "pdf-ollama-translator-history__list" });
 		this.historyListEl = listEl;

@@ -95,7 +95,11 @@
     "open": "Geçmiş",
     "sort": "Zamana göre sırala",
     "sortDesc": "En yeni",
-    "sortAsc": "En eski"
+    "sortAsc": "En eski",
+    "sortSourceAsc": "Kaynak A→Z",
+    "sortSourceDesc": "Kaynak Z→A",
+    "sortTranslationAsc": "Çeviri A→Z",
+    "sortTranslationDesc": "Çeviri Z→A"
   },
   "popup": {
     "translating": "Çevriliyor...",

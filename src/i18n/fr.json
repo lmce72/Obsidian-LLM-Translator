@@ -95,7 +95,11 @@
     "open": "Historique",
     "sort": "Trier par date",
     "sortDesc": "Plus récent",
-    "sortAsc": "Plus ancien"
+    "sortAsc": "Plus ancien",
+    "sortSourceAsc": "Source A→Z",
+    "sortSourceDesc": "Source Z→A",
+    "sortTranslationAsc": "Traduction A→Z",
+    "sortTranslationDesc": "Traduction Z→A"
   },
   "popup": {
     "translating": "Traduction en cours...",

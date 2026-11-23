@@ -95,7 +95,11 @@
     "open": "Verlauf",
     "sort": "Nach Zeit sortieren",
     "sortDesc": "Neueste zuerst",
-    "sortAsc": "Älteste zuerst"
+    "sortAsc": "Älteste zuerst",
+    "sortSourceAsc": "Quelle A→Z",
+    "sortSourceDesc": "Quelle Z→A",
+    "sortTranslationAsc": "Übersetzung A→Z",
+    "sortTranslationDesc": "Übersetzung Z→A"
   },
   "popup": {
     "translating": "Wird übersetzt...",

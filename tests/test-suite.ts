@@ -531,6 +531,9 @@ test("floating ball opens an independent manual input window", async () => {
 	assert.match(sidebar, /history\.title/);
 	assert.match(sidebar, /arrow-left/);
 	assert.match(sidebar, /historyQuery/);
+	assert.match(sidebar, /history__sort-select/);
+	assert.match(sidebar, /sortSourceAsc/);
+	assert.match(sidebar, /history__title-icon/);
 	assert.match(manual, /history\.open/);
 	assert.match(ball, /snappedEdges/);
 	assert.match(ball, /applyViewportPosition/);
@@ -877,11 +880,21 @@ test("translation history is a searchable, time-sorted source map", async () => 
 	history.record("Hello", "您好", "en", "zh-Hans", 3000);
 
 	assert.deepEqual(
-		history.getItems("", "desc").map((item) => [item.sourceText, item.translatedText, item.timestamp]),
+		history.getItems("", "time-desc").map((item) => [item.sourceText, item.translatedText, item.timestamp]),
 		[["Hello", "您好", 3000], ["World", "世界", 2000]],
 	);
-	assert.deepEqual(history.getItems("世界", "asc").map((item) => item.sourceText), ["World"]);
-	assert.deepEqual(history.getItems("hello", "asc").map((item) => item.sourceText), ["Hello"]);
+	assert.deepEqual(history.getItems("世界", "time-asc").map((item) => item.sourceText), ["World"]);
+	assert.deepEqual(history.getItems("hello", "time-asc").map((item) => item.sourceText), ["Hello"]);
+
+
+	const sortable = new TranslationHistory(adapter, "sort.json");
+	sortable.record("Charlie", "Zulu", "en", "zh-Hans", 4000);
+	sortable.record("Alpha", "Yankee", "en", "zh-Hans", 3000);
+	sortable.record("Bravo", "Xray", "en", "zh-Hans", 2000);
+	assert.deepEqual(sortable.getItems("", "source-asc").map((item) => item.sourceText), ["Alpha", "Bravo", "Charlie"]);
+	assert.deepEqual(sortable.getItems("", "source-desc").map((item) => item.sourceText), ["Charlie", "Bravo", "Alpha"]);
+	assert.deepEqual(sortable.getItems("", "translation-asc").map((item) => item.translatedText), ["Xray", "Yankee", "Zulu"]);
+	assert.deepEqual(sortable.getItems("", "translation-desc").map((item) => item.translatedText), ["Zulu", "Yankee", "Xray"]);
 
 	await history.flush();
 	const stored = JSON.parse(files.get("history.json") ?? "{}") as Record<string, { translation: string }>;
@@ -890,7 +903,7 @@ test("translation history is a searchable, time-sorted source map", async () => 
 	const reloaded = new TranslationHistory(adapter, "history.json");
 	await reloaded.load();
 	assert.equal(reloaded.size, 2);
-	assert.equal(reloaded.getItems("", "desc")[0].sourceText, "Hello");
+	assert.equal(reloaded.getItems("", "time-desc")[0].sourceText, "Hello");
 
 	files.set("broken.json", "{not json");
 	const broken = new TranslationHistory(adapter, "broken.json");

@@ -10,7 +10,7 @@ import { FloatingBall } from "./floatingBall";
 import { ManualTranslationWindow, type ManualWindowOptions } from "./manualTranslationWindow";
 import { PdfHighlightService } from "./pdfHighlight/PdfHighlightService";
 import { TranslationCache, buildCacheKey, normalizeCacheText } from "./translationCache";
-import { TranslationHistory, type TranslationHistoryRecord } from "./translationHistory";
+import { TranslationHistory, type TranslationHistoryRecord, type TranslationHistorySort } from "./translationHistory";
 import { t } from "./i18n";
 import { appendTranslationNote, type TranslationNoteSnapshot } from "./noteExport";
 import type {
@@ -1005,7 +1005,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		this.manualWindow.show(anchor, this.floatingBall?.getDocument() ?? activeDocument);
 	}
 
-	getHistoryEntries(query: string, sort: "asc" | "desc"): TranslationHistoryRecord[] {
+	getHistoryEntries(query: string, sort: TranslationHistorySort): TranslationHistoryRecord[] {
 		return this.history?.getItems(query, sort) ?? [];
 	}
 

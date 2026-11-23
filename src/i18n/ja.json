@@ -95,7 +95,11 @@
     "open": "履歴",
     "sort": "時間で並べ替え",
     "sortDesc": "新しい順",
-    "sortAsc": "古い順"
+    "sortAsc": "古い順",
+    "sortSourceAsc": "原文 A→Z",
+    "sortSourceDesc": "原文 Z→A",
+    "sortTranslationAsc": "訳文 A→Z",
+    "sortTranslationDesc": "訳文 Z→A"
   },
   "popup": {
     "translating": "翻訳中...",

@@ -18,6 +18,14 @@ export interface TranslationHistoryRecord {
 	timestamp: number;
 }
 
+export type TranslationHistorySort =
+	| "time-desc"
+	| "time-asc"
+	| "source-asc"
+	| "source-desc"
+	| "translation-asc"
+	| "translation-desc";
+
 export interface TranslationHistoryAdapter {
 	read(path: string): Promise<string | null>;
 	write(path: string, data: string): Promise<void>;
@@ -83,7 +91,7 @@ export class TranslationHistory {
 	}
 
 	/** Newest-first by default; query matches the source or translation. */
-	getItems(query = "", sort: "asc" | "desc" = "desc"): TranslationHistoryRecord[] {
+	getItems(query = "", sort: TranslationHistorySort = "time-desc"): TranslationHistoryRecord[] {
 		const needle = query.trim().toLowerCase();
 		const items: TranslationHistoryRecord[] = [];
 		for (const [sourceText, entry] of this.entries) {
@@ -100,7 +108,18 @@ export class TranslationHistory {
 				timestamp: entry.time,
 			});
 		}
-		items.sort((a, b) => sort === "asc" ? a.timestamp - b.timestamp : b.timestamp - a.timestamp);
+		const direction = sort.endsWith("-asc") ? 1 : -1;
+		const field = sort.startsWith("source")
+			? "source"
+			: sort.startsWith("translation") ? "translation" : "time";
+		items.sort((a, b) => {
+			const result = field === "source"
+				? a.sourceText.localeCompare(b.sourceText, undefined, { sensitivity: "base" })
+				: field === "translation"
+					? a.translatedText.localeCompare(b.translatedText, undefined, { sensitivity: "base" })
+					: a.timestamp - b.timestamp;
+			return result * direction;
+		});
 		return items;
 	}
 

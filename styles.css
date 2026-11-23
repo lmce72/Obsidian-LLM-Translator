@@ -851,8 +851,30 @@ button.pdf-ollama-translator-ball.is-dragging {
 	font: inherit;
 }
 
-.pdf-ollama-translator-history__sort {
-	min-width: 88px;
+.pdf-ollama-translator-history__sort-select {
+	flex: 0 0 auto;
+	min-width: 112px;
+	height: 32px;
+	padding: 0 6px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	box-shadow: none;
+	font: inherit;
+	font-size: var(--font-ui-smaller);
+}
+
+.pdf-ollama-translator-history__title-icon {
+	box-sizing: border-box;
+	width: 28px;
+	height: 28px;
+	padding: 4px;
+	border: 1px solid var(--interactive-accent);
+	border-radius: 6px;
+	background: var(--background-secondary);
+	background: color-mix(in srgb, var(--interactive-accent) 14%, var(--background-primary));
+	color: var(--interactive-accent);
 }
 
 .pdf-ollama-translator-history__list {
@@ -974,7 +996,7 @@ button.pdf-ollama-translator-ball.is-dragging {
 		height: 44px;
 	}
 
-	.pdf-ollama-translator-history__sort {
+	.pdf-ollama-translator-history__sort-select {
 		height: 44px;
 	}
 
