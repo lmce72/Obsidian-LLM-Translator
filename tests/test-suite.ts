@@ -483,9 +483,10 @@ test("sidebar adapts to narrow panes without overflowing", async () => {
 	assert.ok(quickRow >= 0 && addToNote > quickRow && addToNote < copyRow);
 });
 
-test("floating ball drags, snaps to edges, and opens the translation window", async () => {
-	const [ball, popup, main, sidebar, styles, manifest] = await Promise.all([
+test("floating ball opens an independent manual input window", async () => {
+	const [ball, manual, popup, main, sidebar, styles, manifest] = await Promise.all([
 		readProjectFile("src/floatingBall.ts"),
+		readProjectFile("src/manualTranslationWindow.ts"),
 		readProjectFile("src/translationPopup.ts"),
 		readProjectFile("src/main.ts"),
 		readProjectFile("src/sidebarView.ts"),
@@ -499,15 +500,24 @@ test("floating ball drags, snaps to edges, and opens the translation window", as
 	assert.match(ball, /EDGE_SNAP_DISTANCE/);
 	assert.match(ball, /this\.options\.onToggle\(\)/);
 	assert.match(ball, /this\.options\.onPositionChange\(next\)/);
-	assert.match(main, /readSelection\(\) \?\? this\.lastDocumentSelection/);
-	assert.match(main, /translateSelection\(selection, true, true, false\)/);
+
+	// The ball opens its own manual window, not the selection popup.
+	assert.match(manual, /class ManualTranslationWindow/);
+	assert.match(manual, /createEl\("textarea"/);
+	assert.match(manual, /inputEl\.oninput = \(\) => this\.updateControls\(\)/);
+	assert.match(manual, /this\.hide\(\);\s*this\.options\.onClose\(\)/);
+	assert.match(manual, /onTranslate: \(text: string\)/);
+	assert.match(main, /new ManualTranslationWindow\(/);
+	assert.match(main, /toggleManualWindow/);
+	assert.match(main, /translateManualText/);
+	assert.match(main, /cancelManualRequest/);
+	assert.doesNotMatch(main, /getPopupAnchor/);
+	assert.doesNotMatch(popup, /setAnchor|reopen|floatingMode|onOpenSidebar/);
+	assert.match(main, /showPopup = fromPopup \|\| !this\.isSidebarVisible\(\)/);
 	assert.match(sidebar, /language\.sourceShort/);
-	assert.match(popup, /language\.targetShort/);
-	assert.match(popup, /setAnchor\(rect: DOMRect\)/);
-	assert.match(popup, /reopen\(rect: DOMRect/);
-	assert.match(popup, /popup\.openSidebar/);
+	assert.match(manual, /language\.targetShort/);
+
 	assert.match(main, /new FloatingBall\(/);
-	assert.match(main, /toggleFloatingWindow/);
 	assert.match(main, /setFloatingBallPosition/);
 	assert.match(main, /rightSplit\.expand\(\)/);
 	assert.match(main, /autoTranslateSelection: !Platform\.isMobile/);

@@ -89,6 +89,7 @@
   },
   "popup": {
     "translating": "Çevriliyor...",
+    "inputPlaceholder": "Çevrilecek metni yazın",
     "translateSelection": "Çevir",
     "addToNote": "Nota ekle",
     "copyTranslation": "Çeviriyi kopyala",
@@ -149,6 +150,7 @@
   "notice": {
     "nothingToCopy": "Kopyalanacak bir şey yok.",
     "copied": "Kopyalandı.",
+    "copyFailed": "Kopyalama başarısız.",
     "selectTextFirst": "Önce geçerli belgede bir metin seçin.",
     "enterTextFirst": "Önce çevrilecek metni girin.",
     "cannotOpenSettings": "Obsidian ayarları açılamadı.",

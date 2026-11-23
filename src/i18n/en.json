@@ -89,6 +89,7 @@
   },
   "popup": {
     "translating": "Translating...",
+    "inputPlaceholder": "Type text to translate",
     "translateSelection": "Translate",
     "addToNote": "Add to note",
     "copyTranslation": "Copy translation",
@@ -153,6 +154,7 @@
   "notice": {
     "nothingToCopy": "Nothing to copy.",
     "copied": "Copied.",
+    "copyFailed": "Copy failed.",
     "selectTextFirst": "Please select text in the current document first.",
     "enterTextFirst": "Please enter text to translate first.",
     "cannotOpenSettings": "Cannot open Obsidian settings.",

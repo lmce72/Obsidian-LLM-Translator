@@ -4,31 +4,7 @@ import { DEFAULT_TRANSLATION_PROMPT } from "./translatorService";
 import type { HighlightColorId, TranslationLanguage, TranslationProviderId } from "./types";
 import { t } from "./i18n";
 import { HIGHLIGHT_COLOR_ORDER } from "./pdfHighlight/colors";
-
-const SOURCE_LANGUAGE_OPTIONS: Array<{ value: TranslationLanguage; labelKey: string }> = [
-	{ value: "auto", labelKey: "language.auto" },
-	{ value: "en", labelKey: "language.english" },
-	{ value: "fr", labelKey: "language.french" },
-	{ value: "de", labelKey: "language.german" },
-	{ value: "ja", labelKey: "language.japanese" },
-	{ value: "ko", labelKey: "language.korean" },
-	{ value: "fa", labelKey: "language.persian" },
-	{ value: "zh-Hans", labelKey: "language.chinese" },
-	{ value: "es", labelKey: "language.spanish" },
-	{ value: "tr", labelKey: "language.turkish" },
-];
-
-const TARGET_LANGUAGE_OPTIONS: Array<{ value: Exclude<TranslationLanguage, "auto">; labelKey: string }> = [
-	{ value: "en", labelKey: "language.english" },
-	{ value: "fr", labelKey: "language.french" },
-	{ value: "de", labelKey: "language.german" },
-	{ value: "ja", labelKey: "language.japanese" },
-	{ value: "ko", labelKey: "language.korean" },
-	{ value: "fa", labelKey: "language.persian" },
-	{ value: "zh-Hans", labelKey: "language.chinese" },
-	{ value: "es", labelKey: "language.spanish" },
-	{ value: "tr", labelKey: "language.turkish" },
-];
+import { SOURCE_LANGUAGES, TARGET_LANGUAGES } from "./languageOptions";
 
 export class PdfOllamaTranslatorSettingTab extends PluginSettingTab {
 	constructor(app: App, private plugin: PdfOllamaTranslatorPlugin) {
@@ -141,7 +117,7 @@ export class PdfOllamaTranslatorSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName(t("settings.sourceLanguage"))
 			.addDropdown((dropdown) => {
-				for (const option of SOURCE_LANGUAGE_OPTIONS) {
+				for (const option of SOURCE_LANGUAGES) {
 					dropdown.addOption(option.value, t(option.labelKey));
 				}
 				return dropdown
@@ -154,7 +130,7 @@ export class PdfOllamaTranslatorSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName(t("settings.targetLanguage"))
 			.addDropdown((dropdown) => {
-				for (const option of TARGET_LANGUAGE_OPTIONS) {
+				for (const option of TARGET_LANGUAGES) {
 					dropdown.addOption(option.value, t(option.labelKey));
 				}
 				return dropdown

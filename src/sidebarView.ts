@@ -3,6 +3,7 @@ import type PdfOllamaTranslatorPlugin from "./main";
 import type { TranslationLanguage, TranslationProviderId } from "./types";
 import { t } from "./i18n";
 import { HIGHLIGHT_COLOR_ORDER, getHighlightColor } from "./pdfHighlight/colors";
+import { SOURCE_LANGUAGES, TARGET_LANGUAGES } from "./languageOptions";
 
 export const PDF_OLLAMA_TRANSLATOR_VIEW_TYPE = "llm-translator-sidebar";
 
@@ -111,20 +112,9 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 	private renderLanguageControls(container: HTMLElement): void {
 		const rowEl = container.createDiv({ cls: "pdf-ollama-translator-sidebar__language-row" });
 		const sourceEl = rowEl.createEl("select", { cls: "pdf-ollama-translator-sidebar__select" });
-		for (const option of [
-			{ value: "auto", label: t("language.auto") },
-			{ value: "en", label: t("language.english") },
-			{ value: "fr", label: t("language.french") },
-			{ value: "de", label: t("language.german") },
-			{ value: "ja", label: t("language.japanese") },
-			{ value: "ko", label: t("language.korean") },
-			{ value: "fa", label: t("language.persian") },
-			{ value: "zh-Hans", label: t("language.chinese") },
-			{ value: "es", label: t("language.spanish") },
-			{ value: "tr", label: t("language.turkish") },
-		]) {
+		for (const option of SOURCE_LANGUAGES) {
 			sourceEl.createEl("option", {
-				text: `${t("language.sourceShort")}: ${option.label}`,
+				text: `${t("language.sourceShort")}: ${t(option.labelKey)}`,
 				value: option.value,
 			});
 		}
@@ -141,19 +131,9 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		swapButton.onpointerdown = (event) => event.preventDefault();
 
 		const targetEl = rowEl.createEl("select", { cls: "pdf-ollama-translator-sidebar__select" });
-		for (const option of [
-			{ value: "en", label: t("language.english") },
-			{ value: "fr", label: t("language.french") },
-			{ value: "de", label: t("language.german") },
-			{ value: "ja", label: t("language.japanese") },
-			{ value: "ko", label: t("language.korean") },
-			{ value: "fa", label: t("language.persian") },
-			{ value: "zh-Hans", label: t("language.chinese") },
-			{ value: "es", label: t("language.spanish") },
-			{ value: "tr", label: t("language.turkish") },
-		]) {
+		for (const option of TARGET_LANGUAGES) {
 			targetEl.createEl("option", {
-				text: `${t("language.targetShort")}: ${option.label}`,
+				text: `${t("language.targetShort")}: ${t(option.labelKey)}`,
 				value: option.value,
 			});
 		}

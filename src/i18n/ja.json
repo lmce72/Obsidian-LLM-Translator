@@ -89,6 +89,7 @@
   },
   "popup": {
     "translating": "翻訳中...",
+    "inputPlaceholder": "翻訳するテキストを入力",
     "translateSelection": "翻訳",
     "addToNote": "ノートに追加",
     "copyTranslation": "翻訳をコピー",
@@ -149,6 +150,7 @@
   "notice": {
     "nothingToCopy": "コピーする内容がありません。",
     "copied": "コピーしました。",
+    "copyFailed": "コピーに失敗しました。",
     "selectTextFirst": "現在の文書で先にテキストを選択してください。",
     "enterTextFirst": "先に翻訳するテキストを入力してください。",
     "cannotOpenSettings": "Obsidian の設定を開けません。",

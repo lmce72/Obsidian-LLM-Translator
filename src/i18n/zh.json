@@ -89,6 +89,7 @@
   },
   "popup": {
     "translating": "翻译中...",
+    "inputPlaceholder": "输入要翻译的文本",
     "translateSelection": "翻译",
     "addToNote": "加入笔记",
     "copyTranslation": "复制译文",
@@ -153,6 +154,7 @@
   "notice": {
     "nothingToCopy": "没有可复制的内容。",
     "copied": "已复制。",
+    "copyFailed": "复制失败。",
     "selectTextFirst": "请先在当前文档中选中文本。",
     "enterTextFirst": "请先输入要翻译的文本。",
     "cannotOpenSettings": "无法打开 Obsidian 设置页。",

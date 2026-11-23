@@ -89,6 +89,7 @@
   },
   "popup": {
     "translating": "Wird übersetzt...",
+    "inputPlaceholder": "Text zum Übersetzen eingeben",
     "translateSelection": "Übersetzen",
     "addToNote": "Zur Notiz hinzufügen",
     "copyTranslation": "Übersetzung kopieren",
@@ -149,6 +150,7 @@
   "notice": {
     "nothingToCopy": "Nichts zum Kopieren vorhanden.",
     "copied": "Kopiert.",
+    "copyFailed": "Kopieren fehlgeschlagen.",
     "selectTextFirst": "Bitte wählen Sie zuerst Text im aktuellen Dokument aus.",
     "enterTextFirst": "Bitte geben Sie zuerst Text zum Übersetzen ein.",
     "cannotOpenSettings": "Obsidian-Einstellungen können nicht geöffnet werden.",

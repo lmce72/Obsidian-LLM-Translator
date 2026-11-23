@@ -2,6 +2,7 @@ import { setIcon } from "obsidian";
 import type { HighlightColorId, TranslationLanguage, TranslationResult } from "./types";
 import { t } from "./i18n";
 import { getHighlightColor } from "./pdfHighlight/colors";
+import { SOURCE_LANGUAGES, TARGET_LANGUAGES } from "./languageOptions";
 
 type PopupState = "loading" | "success" | "error";
 
@@ -16,11 +17,6 @@ export interface PopupOptions {
 	rememberSize: boolean;
 	width: number;
 	height: number;
-	/**
-	 * Summoned by the floating ball: open beside the anchor and offer the
-	 * sidebar shortcut, instead of hanging below the text selection.
-	 */
-	floatingMode: boolean;
 	onLanguageChange: (
 		sourceLanguage: TranslationLanguage,
 		targetLanguage: Exclude<TranslationLanguage, "auto">,
@@ -31,37 +27,10 @@ export interface PopupOptions {
 	onHighlight: () => void;
 	onRemoveHighlight: () => void;
 	onAddNote: () => void;
-	onOpenSidebar: () => void;
 	onClose: () => void;
 }
 
 const WINDOW_MARGIN = 12;
-const BALL_GAP = 10;
-
-const SOURCE_LANGUAGE_OPTIONS: Array<{ value: TranslationLanguage; label: string }> = [
-	{ value: "auto", label: "Auto" },
-	{ value: "en", label: "EN" },
-	{ value: "fr", label: "FR" },
-	{ value: "de", label: "DE" },
-	{ value: "ja", label: "JA" },
-	{ value: "ko", label: "KO" },
-	{ value: "fa", label: "FA" },
-	{ value: "zh-Hans", label: "ZH" },
-	{ value: "es", label: "ES" },
-	{ value: "tr", label: "TR" },
-];
-
-const TARGET_LANGUAGE_OPTIONS: Array<{ value: Exclude<TranslationLanguage, "auto">; label: string }> = [
-	{ value: "en", label: "EN" },
-	{ value: "fr", label: "FR" },
-	{ value: "de", label: "DE" },
-	{ value: "ja", label: "JA" },
-	{ value: "ko", label: "KO" },
-	{ value: "fa", label: "FA" },
-	{ value: "zh-Hans", label: "ZH" },
-	{ value: "es", label: "ES" },
-	{ value: "tr", label: "TR" },
-];
 
 export class TranslationPopup {
 	private rootEl: HTMLElement;
@@ -97,7 +66,6 @@ export class TranslationPopup {
 		this.rootEl.style.setProperty("--pdf-ollama-translator-line-height", String(options.lineHeight));
 		this.rootEl.style.width = this.manualActionsOnly ? "max-content" : `${options.width}px`;
 		this.rootEl.style.height = this.manualActionsOnly ? "auto" : `${this.getPreferredHeight(options.height)}px`;
-		this.rootEl.toggleClass("pdf-ollama-translator-popup--floating", options.floatingMode);
 		this.renderLanguageControls();
 		this.renderActions();
 		this.reposition();
@@ -161,25 +129,6 @@ export class TranslationPopup {
 		return this.rootEl.style.display !== "none";
 	}
 
-	/** Re-anchor a visible window after the floating ball moves. */
-	setAnchor(rect: DOMRect): void {
-		this.lastRect = rect;
-		if (this.isVisible()) {
-			this.positionNear(rect);
-		}
-	}
-
-	/** Ball click when the window is closed: reopen the last result or the actions. */
-	reopen(rect: DOMRect, document: Document = activeDocument): void {
-		if (this.lastResult) {
-			this.render("success", this.lastResult);
-			this.showAt(rect, document);
-			this.fitToContent();
-			return;
-		}
-		this.showManualActions(rect, document);
-	}
-
 	containsTarget(target: EventTarget | null): boolean {
 		return Boolean(target && typeof target === "object" && "nodeType" in target && this.rootEl.contains(target as Node));
 	}
@@ -224,10 +173,6 @@ export class TranslationPopup {
 		if (this.options.showRetryButton) {
 			const retryButton = this.createIconButton("refresh-cw", t("popup.retryTranslation"));
 			retryButton.onClickEvent(() => this.options.onRetry());
-		}
-		if (this.options.floatingMode) {
-			const sidebarButton = this.createIconButton("panel-right", t("popup.openSidebar"));
-			sidebarButton.onClickEvent(() => this.options.onOpenSidebar());
 		}
 
 		const closeButton = this.createIconButton("x", t("popup.close"));
@@ -277,8 +222,8 @@ export class TranslationPopup {
 			cls: "pdf-ollama-translator-popup__language-select",
 			attr: { "aria-label": t("popup.sourceLanguage"), title: t("popup.sourceLanguage") },
 		});
-		for (const option of SOURCE_LANGUAGE_OPTIONS) {
-			const label = option.value === "auto" ? t("language.autoShort") : option.label;
+		for (const option of SOURCE_LANGUAGES) {
+			const label = option.value === "auto" ? t("language.autoShort") : option.code;
 			sourceSelect.createEl("option", {
 				text: `${t("language.sourceShort")} ${label}`,
 				value: option.value,
@@ -297,9 +242,9 @@ export class TranslationPopup {
 			cls: "pdf-ollama-translator-popup__language-select",
 			attr: { "aria-label": t("popup.targetLanguage"), title: t("popup.targetLanguage") },
 		});
-		for (const option of TARGET_LANGUAGE_OPTIONS) {
+		for (const option of TARGET_LANGUAGES) {
 			targetSelect.createEl("option", {
-				text: `${t("language.targetShort")} ${option.label}`,
+				text: `${t("language.targetShort")} ${option.code}`,
 				value: option.value,
 			});
 		}
@@ -361,26 +306,7 @@ export class TranslationPopup {
 	}
 
 	private positionNear(rect: DOMRect): void {
-		if (this.options.floatingMode) {
-			this.positionBeside(rect);
-			return;
-		}
 		this.applyClampedPosition(rect.left, rect.bottom + 8);
-	}
-
-	/** Place the ball-summoned window on the side of the ball with more room. */
-	private positionBeside(ballRect: DOMRect): void {
-		const window = this.getWindow();
-		const popupRect = this.rootEl.getBoundingClientRect();
-		const centerX = ballRect.left + ballRect.width / 2;
-		const desiredLeft = centerX > window.innerWidth / 2
-			? ballRect.left - popupRect.width - BALL_GAP
-			: ballRect.right + BALL_GAP;
-		let desiredTop = ballRect.bottom - popupRect.height;
-		if (desiredTop < WINDOW_MARGIN) {
-			desiredTop = ballRect.bottom + BALL_GAP;
-		}
-		this.applyClampedPosition(desiredLeft, desiredTop);
 	}
 
 	private applyClampedPosition(left: number, top: number): void {
