@@ -12,6 +12,7 @@ export interface PdfOllamaTranslatorSettings {
 	enablePopup: boolean;
 	enableFloatingBall: boolean;
 	floatingBallPosition: FloatingBallPosition | null;
+	floatingBallSnap: FloatingBallSnap | null;
 	noteTargetPath: string;
 	enableContextMenu: boolean;
 	enableTranslationCache: boolean;
@@ -42,6 +43,11 @@ export interface PdfOllamaTranslatorSettings {
 export interface FloatingBallPosition {
 	x: number;
 	y: number;
+}
+
+export interface FloatingBallSnap {
+	horizontal: "left" | "right" | null;
+	vertical: "top" | "bottom" | null;
 }
 
 export type HighlightColorId = "yellow" | "red" | "blue" | "green" | "purple";

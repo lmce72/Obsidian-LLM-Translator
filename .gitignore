@@ -7,3 +7,4 @@ SPEC*
 .hotreload
 data.json
 cache.json
+history.json

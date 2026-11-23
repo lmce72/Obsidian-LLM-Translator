@@ -1,6 +1,6 @@
 import { setIcon } from "obsidian";
 import { t } from "./i18n";
-import type { FloatingBallPosition } from "./types";
+import type { FloatingBallPosition, FloatingBallSnap } from "./types";
 
 /** Keep the ball fully reachable when it is dragged, snapped or resized. */
 const BALL_MARGIN = 8;
@@ -27,12 +27,13 @@ interface DragState {
 
 export interface FloatingBallOptions {
 	position: FloatingBallPosition | null;
+	snap: FloatingBallSnap | null;
 	/** Click / Enter / Space: open the translation window. */
 	onToggle: () => void;
 	/** Called continuously while the ball moves so the window can follow. */
 	onMove: (position: FloatingBallPosition) => void;
-	/** Called when the position should be persisted. */
-	onPositionChange: (position: FloatingBallPosition) => void;
+	/** Called when the position and its docked edges should be persisted. */
+	onPositionChange: (position: FloatingBallPosition, snap: FloatingBallSnap) => void;
 }
 
 /**
@@ -42,17 +43,19 @@ export interface FloatingBallOptions {
 export class FloatingBall {
 	private rootEl: HTMLButtonElement;
 	private position: FloatingBallPosition | null;
+	private snappedEdges: FloatingBallSnap;
 	private dragState: DragState | null = null;
 	private lastDragEnd = 0;
 	private suppressClickUntil = 0;
 	private saveTimer: number | undefined;
 	private viewportObserver: ResizeObserver;
 	private resizeHandler = () => {
-		this.applyPosition(this.getCurrentPosition());
+		this.applyViewportPosition();
 	};
 
 	constructor(private options: FloatingBallOptions) {
 		this.position = options.position;
+		this.snappedEdges = { horizontal: null, vertical: null };
 		this.rootEl = window.document.body.createEl("button", {
 			cls: "pdf-ollama-translator-ball clickable-icon",
 			attr: {
@@ -86,7 +89,12 @@ export class FloatingBall {
 		// window resize event; clamp the ball back into view either way.
 		this.viewportObserver = new ResizeObserver(() => this.resizeHandler());
 		this.viewportObserver.observe(this.rootEl.ownerDocument.documentElement);
-		this.applyPosition(this.position ?? this.getDefaultPosition());
+		this.snappedEdges = options.snap ?? this.inferSnap(options.position);
+		if (this.snappedEdges.horizontal || this.snappedEdges.vertical) {
+			this.applyViewportPosition();
+		} else {
+			this.applyPosition(this.position ?? this.getDefaultPosition());
+		}
 	}
 
 	getRect(): DOMRect {
@@ -95,7 +103,7 @@ export class FloatingBall {
 
 	/** Re-clamp after a viewport change that did not fire a resize event. */
 	ensureVisible(): void {
-		this.applyPosition(this.getCurrentPosition());
+		this.applyViewportPosition();
 	}
 
 	getDocument(): Document {
@@ -127,6 +135,48 @@ export class FloatingBall {
 	private getCurrentPosition(): FloatingBallPosition {
 		const rect = this.rootEl.getBoundingClientRect();
 		return { x: rect.left, y: rect.top };
+	}
+
+	/** Discover a docked edge from a position saved before snap state existed. */
+	private inferSnap(position: FloatingBallPosition | null): FloatingBallSnap {
+		if (!position) {
+			return { horizontal: null, vertical: null };
+		}
+		const window = this.getWindow();
+		const rect = this.rootEl.getBoundingClientRect();
+		const size = rect.width || 48;
+		const maxLeft = Math.max(BALL_MARGIN, window.innerWidth - size - BALL_MARGIN);
+		const maxTop = Math.max(BALL_MARGIN, window.innerHeight - size - BALL_MARGIN);
+		return {
+			horizontal: position.x <= BALL_MARGIN + 2
+				? "left"
+				: position.x >= maxLeft - 2 ? "right" : null,
+			vertical: position.y <= BALL_MARGIN + 2
+				? "top"
+				: position.y >= maxTop - 2 ? "bottom" : null,
+		};
+	}
+
+	/**
+	 * Recompute a docked edge from the current viewport. This is what keeps the
+	 * ball on the edge when the window shrinks and is expanded again.
+	 */
+	private applyViewportPosition(): void {
+		const window = this.getWindow();
+		const rect = this.rootEl.getBoundingClientRect();
+		const size = rect.width || 48;
+		const base = this.position ?? this.getDefaultPosition();
+		const left = this.snappedEdges.horizontal === "right"
+			? window.innerWidth - size - BALL_MARGIN
+			: this.snappedEdges.horizontal === "left"
+				? BALL_MARGIN
+				: base.x;
+		const top = this.snappedEdges.vertical === "bottom"
+			? window.innerHeight - size - BALL_MARGIN
+			: this.snappedEdges.vertical === "top"
+				? BALL_MARGIN
+				: base.y;
+		this.applyPosition({ x: left, y: top });
 	}
 
 	/** Clamp a desired top-left position so the whole ball stays on screen. */
@@ -204,7 +254,7 @@ export class FloatingBall {
 		this.lastDragEnd = Date.now();
 		const next = this.applyPosition(this.snapToEdges());
 		this.options.onMove(next);
-		this.options.onPositionChange(next);
+		this.options.onPositionChange(next, { ...this.snappedEdges });
 	}
 
 	/** Dock the ball to any viewport edge it was released close to. */
@@ -215,17 +265,24 @@ export class FloatingBall {
 		const maxTop = Math.max(BALL_MARGIN, window.innerHeight - rect.height - BALL_MARGIN);
 		let left = rect.left;
 		let top = rect.top;
+		let horizontal: FloatingBallSnap["horizontal"] = null;
+		let vertical: FloatingBallSnap["vertical"] = null;
 
 		if (left <= BALL_MARGIN + EDGE_SNAP_DISTANCE) {
 			left = BALL_MARGIN;
+			horizontal = "left";
 		} else if (left >= maxLeft - EDGE_SNAP_DISTANCE) {
 			left = maxLeft;
+			horizontal = "right";
 		}
 		if (top <= BALL_MARGIN + EDGE_SNAP_DISTANCE) {
 			top = BALL_MARGIN;
+			vertical = "top";
 		} else if (top >= maxTop - EDGE_SNAP_DISTANCE) {
 			top = maxTop;
+			vertical = "bottom";
 		}
+		this.snappedEdges = { horizontal, vertical };
 		return { x: left, y: top };
 	}
 
@@ -242,12 +299,18 @@ export class FloatingBall {
 		}
 		event.preventDefault();
 		event.stopPropagation();
+		if (dx !== 0) {
+			this.snappedEdges = { ...this.snappedEdges, horizontal: null };
+		}
+		if (dy !== 0) {
+			this.snappedEdges = { ...this.snappedEdges, vertical: null };
+		}
 		const current = this.getCurrentPosition();
 		const next = this.applyPosition({ x: current.x + dx, y: current.y + dy });
 		this.options.onMove(next);
 		this.getWindow().clearTimeout(this.saveTimer);
 		this.saveTimer = this.getWindow().setTimeout(
-			() => this.options.onPositionChange(next),
+			() => this.options.onPositionChange(next, { ...this.snappedEdges }),
 			POSITION_SAVE_DELAY_MS,
 		);
 	}

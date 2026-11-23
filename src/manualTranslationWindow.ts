@@ -18,6 +18,7 @@ export interface ManualWindowOptions {
 	onTranslate: (text: string) => void;
 	onAddNote: (sourceText: string, translatedText: string) => void;
 	onOpenSidebar: () => void;
+	onOpenHistory: () => void;
 	onClose: () => void;
 }
 
@@ -93,6 +94,7 @@ export class ManualTranslationWindow {
 		const actionsEl = headerEl.createDiv({ cls: "pdf-ollama-translator-manual__actions" });
 		this.copyButtonEl = this.createIconButton(actionsEl, "copy", t("popup.copyTranslation"), () => this.copyResult());
 		this.noteButtonEl = this.createIconButton(actionsEl, "file-plus", t("sidebar.addToNote"), () => this.addNote());
+		this.createIconButton(actionsEl, "history", t("history.open"), () => this.options.onOpenHistory());
 		this.createIconButton(actionsEl, "panel-right", t("popup.openSidebar"), () => this.options.onOpenSidebar());
 		this.createIconButton(actionsEl, "x", t("popup.close"), () => {
 			// Hide first so the close button always works, then cancel the request.

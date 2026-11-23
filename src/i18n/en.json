@@ -87,6 +87,16 @@
   "ball": {
     "open": "Open translation window"
   },
+  "history": {
+    "title": "History",
+    "search": "Search source or translation",
+    "empty": "No history yet",
+    "back": "Back",
+    "open": "History",
+    "sort": "Sort by time",
+    "sortDesc": "Newest first",
+    "sortAsc": "Oldest first"
+  },
   "popup": {
     "translating": "Translating...",
     "inputPlaceholder": "Type text to translate",

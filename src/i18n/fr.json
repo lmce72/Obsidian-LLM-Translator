@@ -87,6 +87,16 @@
   "ball": {
     "open": "Ouvrir la fenêtre de traduction"
   },
+  "history": {
+    "title": "Historique",
+    "search": "Rechercher la source ou la traduction",
+    "empty": "Aucun historique",
+    "back": "Retour",
+    "open": "Historique",
+    "sort": "Trier par date",
+    "sortDesc": "Plus récent",
+    "sortAsc": "Plus ancien"
+  },
   "popup": {
     "translating": "Traduction en cours...",
     "inputPlaceholder": "Saisissez le texte à traduire",

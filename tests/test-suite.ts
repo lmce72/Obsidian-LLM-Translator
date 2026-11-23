@@ -23,6 +23,7 @@ import {
 	truncateHttpErrorBody,
 } from "../src/translatorService";
 import { TranslationCache, buildCacheKey, normalizeCacheText } from "../src/translationCache";
+import { TranslationHistory } from "../src/translationHistory";
 import type { PdfOllamaTranslatorSettings, TranslationRequest } from "../src/types";
 
 Object.defineProperty(globalThis, "window", { value: globalThis, configurable: true });
@@ -39,6 +40,7 @@ const SETTINGS: PdfOllamaTranslatorSettings = {
 	enablePopup: true,
 	enableFloatingBall: true,
 	floatingBallPosition: null,
+	floatingBallSnap: null,
 	enableContextMenu: true,
 	enableTranslationCache: true,
 	restrictSourceLanguages: false,
@@ -499,7 +501,7 @@ test("floating ball opens an independent manual input window", async () => {
 	assert.match(ball, /releasePointerCapture\(event\.pointerId\)/);
 	assert.match(ball, /EDGE_SNAP_DISTANCE/);
 	assert.match(ball, /this\.options\.onToggle\(\)/);
-	assert.match(ball, /this\.options\.onPositionChange\(next\)/);
+	assert.match(ball, /this\.options\.onPositionChange\(next, \{ \.\.\.this\.snappedEdges \}\)/);
 	assert.match(ball, /visualViewport\?\.addEventListener\("resize"/);
 	assert.match(ball, /viewportObserver\.observe\(this\.rootEl\.ownerDocument\.documentElement\)/);
 	assert.match(ball, /ensureVisible\(\): void/);
@@ -521,6 +523,17 @@ test("floating ball opens an independent manual input window", async () => {
 	assert.match(main, /showPopup = fromPopup \|\| !this\.isSidebarVisible\(\)/);
 	assert.match(sidebar, /language\.sourceShort/);
 	assert.match(manual, /language\.targetShort/);
+
+	// History entry points and the docked-edge resize fix.
+	assert.match(main, /history\.json/);
+	assert.match(main, /showSidebarHistory/);
+	assert.match(main, /floatingBallSnap/);
+	assert.match(sidebar, /history\.title/);
+	assert.match(sidebar, /arrow-left/);
+	assert.match(sidebar, /historyQuery/);
+	assert.match(manual, /history\.open/);
+	assert.match(ball, /snappedEdges/);
+	assert.match(ball, /applyViewportPosition/);
 
 	assert.match(main, /new FloatingBall\(/);
 	assert.match(main, /setFloatingBallPosition/);
@@ -847,6 +860,42 @@ test("automatic Persian translation preserves custom prompt and resolves languag
 	await service.translate({ text: "Hello", sourceLanguage: "auto", targetLanguage: "fa", allowedSourceLanguages: ["fa"] });
 	assert.match(prompt, /Formal tone for Persian \(Farsi\)/);
 	assert.match(prompt, /Source language: auto-detected language/);
+});
+
+test("translation history is a searchable, time-sorted source map", async () => {
+	const files = new Map<string, string>();
+	const adapter = {
+		read: async (path: string) => files.get(path) ?? null,
+		write: async (path: string, data: string) => {
+			files.set(path, data);
+		},
+	};
+	const history = new TranslationHistory(adapter, "history.json");
+	await history.load();
+	history.record("Hello", "你好", "en", "zh-Hans", 1000);
+	history.record("World", "世界", "en", "zh-Hans", 2000);
+	history.record("Hello", "您好", "en", "zh-Hans", 3000);
+
+	assert.deepEqual(
+		history.getItems("", "desc").map((item) => [item.sourceText, item.translatedText, item.timestamp]),
+		[["Hello", "您好", 3000], ["World", "世界", 2000]],
+	);
+	assert.deepEqual(history.getItems("世界", "asc").map((item) => item.sourceText), ["World"]);
+	assert.deepEqual(history.getItems("hello", "asc").map((item) => item.sourceText), ["Hello"]);
+
+	await history.flush();
+	const stored = JSON.parse(files.get("history.json") ?? "{}") as Record<string, { translation: string }>;
+	assert.equal(stored.Hello.translation, "您好");
+
+	const reloaded = new TranslationHistory(adapter, "history.json");
+	await reloaded.load();
+	assert.equal(reloaded.size, 2);
+	assert.equal(reloaded.getItems("", "desc")[0].sourceText, "Hello");
+
+	files.set("broken.json", "{not json");
+	const broken = new TranslationHistory(adapter, "broken.json");
+	await broken.load();
+	assert.equal(broken.size, 0);
 });
 
 test("manual translate pointerup and click trigger one deferred action", async () => {

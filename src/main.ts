@@ -10,11 +10,13 @@ import { FloatingBall } from "./floatingBall";
 import { ManualTranslationWindow, type ManualWindowOptions } from "./manualTranslationWindow";
 import { PdfHighlightService } from "./pdfHighlight/PdfHighlightService";
 import { TranslationCache, buildCacheKey, normalizeCacheText } from "./translationCache";
+import { TranslationHistory, type TranslationHistoryRecord } from "./translationHistory";
 import { t } from "./i18n";
 import { appendTranslationNote, type TranslationNoteSnapshot } from "./noteExport";
 import type {
 	ConnectionTestResult,
 	FloatingBallPosition,
+	FloatingBallSnap,
 	PdfOllamaTranslatorSettings,
 	PdfTextSelection,
 	SidebarTranslationState,
@@ -34,6 +36,7 @@ const DEFAULT_SETTINGS: PdfOllamaTranslatorSettings = {
 	enablePopup: true,
 	enableFloatingBall: true,
 	floatingBallPosition: null,
+	floatingBallSnap: null,
 	noteTargetPath: "",
 	enableContextMenu: true,
 	enableTranslationCache: true,
@@ -80,6 +83,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 	private floatingBall: FloatingBall | undefined;
 	private manualWindow: ManualTranslationWindow | undefined;
 	private manualRequest: AbortController | undefined;
+	private history: TranslationHistory | undefined;
 	private cache: TranslationCache | undefined;
 	private selectionTimer: number | undefined;
 	private activeRequest: AbortController | undefined;
@@ -103,6 +107,8 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 
 		this.cache = new TranslationCache(this.app.vault.adapter, `${this.manifest.dir}/cache.json`);
 		await this.cache.load();
+		this.history = new TranslationHistory(this.app.vault.adapter, `${this.manifest.dir}/history.json`);
+		await this.history.load();
 
 		this.translator = new TranslatorService(
 			() => this.settings,
@@ -160,6 +166,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		this.cancelActiveRequest();
 		window.clearTimeout(this.selectionTimer);
 		void this.cache?.flush().catch(() => undefined);
+		void this.history?.flush().catch(() => undefined);
 		this.contextMenuService?.destroy();
 		void this.highlightService?.flushAllPending();
 		this.highlightService?.destroy();
@@ -834,6 +841,12 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 	}
 
 	private presentSuccess(result: TranslationResult, selection: PdfTextSelection, shouldShowPopup: boolean): void {
+		this.history?.record(
+			result.sourceText,
+			result.translatedText,
+			this.settings.sourceLanguage,
+			this.settings.targetLanguage,
+		);
 		this.sidebarNoteSource = { file: selection.file, pageHint: selection.pageHint, selection };
 		this.popupNoteSnapshot = undefined;
 		if (shouldShowPopup) {
@@ -931,6 +944,11 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 				this.cancelManualRequest();
 				void this.activateSidebarView();
 			},
+			onOpenHistory: () => {
+				this.manualWindow?.hide();
+				this.cancelManualRequest();
+				void this.showSidebarHistory();
+			},
 			onClose: () => {
 				this.cancelManualRequest();
 			},
@@ -952,13 +970,14 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		}
 		this.floatingBall = new FloatingBall({
 			position: this.settings.floatingBallPosition,
+			snap: this.settings.floatingBallSnap,
 			onToggle: () => this.toggleManualWindow(),
 			onMove: () => {
 				if (this.floatingBall) {
 					this.manualWindow?.setAnchor(this.floatingBall.getRect());
 				}
 			},
-			onPositionChange: (position) => void this.setFloatingBallPosition(position),
+			onPositionChange: (position, snap) => void this.setFloatingBallPosition(position, snap),
 		});
 	}
 
@@ -967,8 +986,9 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 	 * re-renders the sidebar, which would reset its focus and scroll on every
 	 * drag release.
 	 */
-	async setFloatingBallPosition(position: FloatingBallPosition): Promise<void> {
+	async setFloatingBallPosition(position: FloatingBallPosition, snap: FloatingBallSnap): Promise<void> {
 		this.settings.floatingBallPosition = position;
+		this.settings.floatingBallSnap = snap;
 		await this.saveSettings();
 	}
 
@@ -983,6 +1003,29 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		}
 		const anchor = this.floatingBall?.getRect() ?? this.getViewportCenterRect();
 		this.manualWindow.show(anchor, this.floatingBall?.getDocument() ?? activeDocument);
+	}
+
+	getHistoryEntries(query: string, sort: "asc" | "desc"): TranslationHistoryRecord[] {
+		return this.history?.getItems(query, sort) ?? [];
+	}
+
+	/** Open (or reveal) the sidebar and switch its view to history. */
+	async showSidebarHistory(): Promise<void> {
+		this.manualWindow?.hide();
+		this.cancelManualRequest();
+		let leaves = this.app.workspace.getLeavesOfType(PDF_OLLAMA_TRANSLATOR_VIEW_TYPE);
+		if (leaves.length === 0) {
+			await this.activateSidebarView();
+			leaves = this.app.workspace.getLeavesOfType(PDF_OLLAMA_TRANSLATOR_VIEW_TYPE);
+		} else {
+			this.app.workspace.rightSplit.expand();
+			this.app.workspace.revealLeaf(leaves[0]);
+		}
+		for (const leaf of leaves) {
+			if (leaf.view instanceof PdfOllamaTranslatorSidebarView) {
+				leaf.view.showHistory();
+			}
+		}
 	}
 
 	/**
@@ -1008,6 +1051,12 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		if (cacheEnabled) {
 			const cached = this.cache!.get(key);
 			if (cached) {
+				this.history?.record(
+					sourceText,
+					cached.translatedText,
+					this.settings.sourceLanguage,
+					this.settings.targetLanguage,
+				);
 				this.manualWindow?.showResult(sourceText, cached.translatedText);
 				return;
 			}
@@ -1028,6 +1077,12 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			if (request.signal.aborted) {
 				return;
 			}
+			this.history?.record(
+				sourceText,
+				result.translatedText,
+				this.settings.sourceLanguage,
+				this.settings.targetLanguage,
+			);
 			this.manualWindow?.showResult(sourceText, result.translatedText);
 			if (cacheEnabled && result.translatedText) {
 				this.cache!.set(key, {
@@ -1123,6 +1178,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			floatingBallPosition: normalizeFloatingBallPosition(
 				legacy.floatingBallPosition ?? legacy.floatingWindowPosition,
 			),
+			floatingBallSnap: normalizeFloatingBallSnap(legacy.floatingBallSnap),
 			customPrompt,
 		};
 		if (Object.prototype.hasOwnProperty.call(loaded, "cloudApiKey") || customPrompt !== storedPrompt) {
@@ -1158,6 +1214,16 @@ function normalizeFloatingBallPosition(value: unknown): FloatingBallPosition | n
 		return null;
 	}
 	return { x, y };
+}
+
+function normalizeFloatingBallSnap(value: unknown): FloatingBallSnap | null {
+	if (!value || typeof value !== "object") {
+		return null;
+	}
+	const { horizontal, vertical } = value as Record<string, unknown>;
+	const h = horizontal === "left" || horizontal === "right" ? horizontal : null;
+	const v = vertical === "top" || vertical === "bottom" ? vertical : null;
+	return h || v ? { horizontal: h, vertical: v } : null;
 }
 
 function toReadableMessage(error: unknown): string {

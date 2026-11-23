@@ -590,6 +590,13 @@ button.pdf-ollama-translator-ball.is-dragging {
 	white-space: nowrap;
 }
 
+.pdf-ollama-translator-sidebar__header-actions {
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
+	gap: 4px;
+}
+
 .pdf-ollama-translator-sidebar__title-icon {
 	display: inline-flex;
 	width: 22px;
@@ -823,6 +830,81 @@ button.pdf-ollama-translator-ball.is-dragging {
 	text-align: center;
 }
 
+.pdf-ollama-translator-history__toolbar {
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.pdf-ollama-translator-history__search {
+	flex: 1 1 140px;
+	min-width: 0;
+	height: 32px;
+	padding: 0 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	box-shadow: none;
+	font: inherit;
+}
+
+.pdf-ollama-translator-history__sort {
+	min-width: 88px;
+}
+
+.pdf-ollama-translator-history__list {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	min-height: 0;
+	gap: 6px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.pdf-ollama-translator-history__empty {
+	padding: 16px 4px;
+	color: var(--text-muted);
+}
+
+.pdf-ollama-translator-history__item {
+	padding: 8px 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-secondary);
+}
+
+.pdf-ollama-translator-history__meta {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.pdf-ollama-translator-history__time {
+	flex: 0 0 auto;
+}
+
+.pdf-ollama-translator-history__source {
+	margin-top: 4px;
+	font-weight: 600;
+	white-space: pre-wrap;
+	word-break: break-word;
+	user-select: text;
+}
+
+.pdf-ollama-translator-history__translation {
+	margin-top: 2px;
+	white-space: pre-wrap;
+	word-break: break-word;
+	user-select: text;
+}
+
 /* Narrow panes: stack the label above the actions so controls never spill out. */
 @container translator-sidebar (inline-size < 340px) {
 	.pdf-ollama-translator-sidebar__control-row {
@@ -886,6 +968,14 @@ button.pdf-ollama-translator-ball.is-dragging {
 
 	.pdf-ollama-translator-manual__input {
 		height: 96px;
+	}
+
+	.pdf-ollama-translator-history__search {
+		height: 44px;
+	}
+
+	.pdf-ollama-translator-history__sort {
+		height: 44px;
 	}
 
 	.pdf-ollama-translator-popup__button,

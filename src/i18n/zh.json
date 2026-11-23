@@ -87,6 +87,16 @@
   "ball": {
     "open": "打开翻译窗口"
   },
+  "history": {
+    "title": "历史记录",
+    "search": "搜索原文或译文",
+    "empty": "暂无历史记录",
+    "back": "返回",
+    "open": "历史记录",
+    "sort": "按时间排序",
+    "sortDesc": "最新优先",
+    "sortAsc": "最早优先"
+  },
   "popup": {
     "translating": "翻译中...",
     "inputPlaceholder": "输入要翻译的文本",

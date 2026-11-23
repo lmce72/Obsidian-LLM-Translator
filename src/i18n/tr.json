@@ -87,6 +87,16 @@
   "ball": {
     "open": "Çeviri penceresini aç"
   },
+  "history": {
+    "title": "Geçmiş",
+    "search": "Kaynak veya çeviri ara",
+    "empty": "Henüz geçmiş yok",
+    "back": "Geri",
+    "open": "Geçmiş",
+    "sort": "Zamana göre sırala",
+    "sortDesc": "En yeni",
+    "sortAsc": "En eski"
+  },
   "popup": {
     "translating": "Çevriliyor...",
     "inputPlaceholder": "Çevrilecek metni yazın",

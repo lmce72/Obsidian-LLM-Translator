@@ -87,6 +87,16 @@
   "ball": {
     "open": "翻訳ウィンドウを開く"
   },
+  "history": {
+    "title": "履歴",
+    "search": "原文または訳文を検索",
+    "empty": "履歴はまだありません",
+    "back": "戻る",
+    "open": "履歴",
+    "sort": "時間で並べ替え",
+    "sortDesc": "新しい順",
+    "sortAsc": "古い順"
+  },
   "popup": {
     "translating": "翻訳中...",
     "inputPlaceholder": "翻訳するテキストを入力",

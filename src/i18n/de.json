@@ -87,6 +87,16 @@
   "ball": {
     "open": "Übersetzungsfenster öffnen"
   },
+  "history": {
+    "title": "Verlauf",
+    "search": "Quelle oder Übersetzung suchen",
+    "empty": "Noch kein Verlauf",
+    "back": "Zurück",
+    "open": "Verlauf",
+    "sort": "Nach Zeit sortieren",
+    "sortDesc": "Neueste zuerst",
+    "sortAsc": "Älteste zuerst"
+  },
   "popup": {
     "translating": "Wird übersetzt...",
     "inputPlaceholder": "Text zum Übersetzen eingeben",

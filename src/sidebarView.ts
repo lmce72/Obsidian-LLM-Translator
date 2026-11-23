@@ -7,9 +7,16 @@ import { SOURCE_LANGUAGES, TARGET_LANGUAGES } from "./languageOptions";
 
 export const PDF_OLLAMA_TRANSLATOR_VIEW_TYPE = "llm-translator-sidebar";
 
+type SidebarMode = "translate" | "history";
+
 export class PdfOllamaTranslatorSidebarView extends ItemView {
 	private sourceInputEl: HTMLTextAreaElement | null = null;
 	private resultOutputEl: HTMLElement | null = null;
+	private mode: SidebarMode = "translate";
+	private historyQuery = "";
+	private historySort: "asc" | "desc" = "desc";
+	private historySearchEl: HTMLInputElement | null = null;
+	private historyListEl: HTMLElement | null = null;
 
 	constructor(leaf: WorkspaceLeaf, private plugin: PdfOllamaTranslatorPlugin) {
 		super(leaf);
@@ -40,18 +47,51 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		this.render();
 	}
 
+	showHistory(): void {
+		this.mode = "history";
+		// A fresh entry starts with the full, newest-first list; the search and
+		// sort state only persists across automatic refreshes while open.
+		this.historyQuery = "";
+		this.historySort = "desc";
+		this.render();
+	}
+
+	showTranslator(): void {
+		this.mode = "translate";
+		this.render();
+	}
+
 	private render(): void {
 		const container = this.containerEl.children[1] as HTMLElement;
+		const searchHadFocus = this.historySearchEl !== null
+			&& this.historySearchEl.ownerDocument.activeElement === this.historySearchEl;
 		container.empty();
 		container.addClass("pdf-ollama-translator-sidebar");
+		this.sourceInputEl = null;
+		this.resultOutputEl = null;
+		if (this.mode === "history") {
+			this.renderHistory(container, searchHadFocus);
+			return;
+		}
+		this.renderTranslateView(container);
+	}
 
+	private renderTranslateView(container: HTMLElement): void {
 		const headerEl = container.createDiv({ cls: "pdf-ollama-translator-sidebar__header" });
 		const titleEl = headerEl.createDiv({ cls: "pdf-ollama-translator-sidebar__title" });
 		const iconEl = titleEl.createSpan({ cls: "pdf-ollama-translator-sidebar__title-icon" });
 		setIcon(iconEl, "languages");
 		titleEl.createSpan({ text: "LLM Translator", cls: "pdf-ollama-translator-sidebar__title-text" });
 
-		const openSettingsButton = headerEl.createEl("button", {
+		const actionsEl = headerEl.createDiv({ cls: "pdf-ollama-translator-sidebar__header-actions" });
+		const historyButton = actionsEl.createEl("button", {
+			cls: "pdf-ollama-translator-sidebar__icon-button clickable-icon",
+			attr: { title: t("history.open"), "aria-label": t("history.open") },
+		});
+		setIcon(historyButton, "history");
+		historyButton.onClickEvent(() => this.showHistory());
+
+		const openSettingsButton = actionsEl.createEl("button", {
 			cls: "pdf-ollama-translator-sidebar__icon-button clickable-icon",
 			attr: { title: t("sidebar.openSettings"), "aria-label": t("sidebar.openSettings") },
 		});
@@ -62,6 +102,89 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		this.renderLanguageControls(container);
 		this.renderTextPanels(container);
 		this.renderBottomControls(container);
+	}
+
+	private renderHistory(container: HTMLElement, searchHadFocus: boolean): void {
+		const headerEl = container.createDiv({ cls: "pdf-ollama-translator-sidebar__header" });
+		const backButton = headerEl.createEl("button", {
+			cls: "pdf-ollama-translator-sidebar__icon-button clickable-icon",
+			attr: { title: t("history.back"), "aria-label": t("history.back") },
+		});
+		setIcon(backButton, "arrow-left");
+		backButton.onClickEvent(() => this.showTranslator());
+
+		const titleEl = headerEl.createDiv({ cls: "pdf-ollama-translator-sidebar__title" });
+		const iconEl = titleEl.createSpan({ cls: "pdf-ollama-translator-sidebar__title-icon" });
+		setIcon(iconEl, "history");
+		titleEl.createSpan({ text: t("history.title"), cls: "pdf-ollama-translator-sidebar__title-text" });
+
+		const toolbarEl = container.createDiv({ cls: "pdf-ollama-translator-history__toolbar" });
+		const searchEl = toolbarEl.createEl("input", {
+			cls: "pdf-ollama-translator-history__search",
+			attr: {
+				type: "search",
+				placeholder: t("history.search"),
+				"aria-label": t("history.search"),
+			},
+		});
+		searchEl.value = this.historyQuery;
+		searchEl.oninput = () => {
+			this.historyQuery = searchEl.value;
+			this.renderHistoryList();
+		};
+		this.historySearchEl = searchEl;
+
+		const sortButton = toolbarEl.createEl("button", {
+			cls: "pdf-ollama-translator-sidebar__clear-button pdf-ollama-translator-history__sort",
+			text: this.historySort === "desc" ? t("history.sortDesc") : t("history.sortAsc"),
+			attr: { title: t("history.sort"), "aria-label": t("history.sort") },
+		});
+		sortButton.onClickEvent(() => {
+			this.historySort = this.historySort === "desc" ? "asc" : "desc";
+			sortButton.setText(this.historySort === "desc" ? t("history.sortDesc") : t("history.sortAsc"));
+			this.renderHistoryList();
+		});
+
+		const listEl = container.createDiv({ cls: "pdf-ollama-translator-history__list" });
+		this.historyListEl = listEl;
+		this.renderHistoryList();
+
+		if (searchHadFocus) {
+			searchEl.focus();
+			searchEl.setSelectionRange(searchEl.value.length, searchEl.value.length);
+		}
+	}
+
+	private renderHistoryList(): void {
+		const listEl = this.historyListEl;
+		if (!listEl) {
+			return;
+		}
+		const items = this.plugin.getHistoryEntries(this.historyQuery, this.historySort);
+		listEl.empty();
+		if (items.length === 0) {
+			listEl.createDiv({ cls: "pdf-ollama-translator-history__empty", text: t("history.empty") });
+			return;
+		}
+		for (const item of items) {
+			const rowEl = listEl.createDiv({ cls: "pdf-ollama-translator-history__item" });
+			const metaEl = rowEl.createDiv({ cls: "pdf-ollama-translator-history__meta" });
+			metaEl.createSpan({
+				text: `${this.languageLabel(item.sourceLanguage)} → ${this.languageLabel(item.targetLanguage)}`,
+			});
+			metaEl.createSpan({
+				cls: "pdf-ollama-translator-history__time",
+				text: new Date(item.timestamp).toLocaleString(),
+			});
+			rowEl.createDiv({ cls: "pdf-ollama-translator-history__source", text: item.sourceText, attr: { dir: "auto" } });
+			rowEl.createDiv({ cls: "pdf-ollama-translator-history__translation", text: item.translatedText, attr: { dir: "auto" } });
+		}
+	}
+
+	private languageLabel(value: TranslationLanguage): string {
+		const option = SOURCE_LANGUAGES.find((item) => item.value === value)
+			?? TARGET_LANGUAGES.find((item) => item.value === value);
+		return option ? t(option.labelKey) : value;
 	}
 
 	private renderServiceControls(container: HTMLElement): void {
