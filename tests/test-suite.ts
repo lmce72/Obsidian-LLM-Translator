@@ -37,6 +37,8 @@ const SETTINGS: PdfOllamaTranslatorSettings = {
 	cloudApiModel: "test-cloud-model",
 	autoTranslateSelection: true,
 	enablePopup: true,
+	enableFloatingBall: true,
+	floatingBallPosition: null,
 	enableContextMenu: true,
 	enableTranslationCache: true,
 	restrictSourceLanguages: false,
@@ -86,7 +88,7 @@ test("manual bar translation remains in the popup when the sidebar is visible", 
 	const selection = { text: "selected text", rect: { left: 12, top: 8 }, document: {} };
 	const events: string[] = [];
 	let finishTranslation!: (value: unknown) => void;
-	state.settings = { ...SETTINGS, autoTranslateSelection: false };
+	state.settings = { ...SETTINGS, autoTranslateSelection: false, enableFloatingBall: false };
 	state.selectionReader = { readSelection: () => selection };
 	state.popup = {
 		showManualActions: () => events.push("manual"),
@@ -124,7 +126,7 @@ test("disabling popup during a request keeps the completed result in the sidebar
 	const state = plugin as unknown as Record<string, unknown>;
 	const events: string[] = [];
 	let finishTranslation!: (value: unknown) => void;
-	state.settings = { ...SETTINGS, enablePopup: true };
+	state.settings = { ...SETTINGS, enablePopup: true, enableFloatingBall: false };
 	state.popup = {
 		showLoading: () => events.push("loading"),
 		showResult: () => events.push("result"),
@@ -455,7 +457,7 @@ test("annotation interaction and style regression guards stay enabled", async ()
 	assert.doesNotMatch(styles, /!important|:has\(/);
 });
 
-test("sidebar bottom controls share one guarded left-aligned action column", async () => {
+test("sidebar adapts to narrow panes without overflowing", async () => {
 	const [sidebar, styles] = await Promise.all([
 		readProjectFile("src/sidebarView.ts"),
 		readProjectFile("styles.css"),
@@ -463,15 +465,52 @@ test("sidebar bottom controls share one guarded left-aligned action column", asy
 
 	assert.equal((sidebar.match(/pdf-ollama-translator-sidebar__control-row/g) ?? []).length, 3);
 	assert.equal((sidebar.match(/pdf-ollama-translator-sidebar__control-actions/g) ?? []).length, 3);
-	assert.match(styles, /\.pdf-ollama-translator-sidebar\s*{[^}]*min-width: 368px/);
-	assert.match(sidebar, /pdf-ollama-translator-sidebar-leaf/);
-	assert.match(sidebar, /pdf-ollama-translator-sidebar-split/);
-	assert.match(styles, /\.pdf-ollama-translator-sidebar-leaf,\s*\.pdf-ollama-translator-sidebar-split\s*{[^}]*min-width: 368px/);
-	assert.match(styles, /\.pdf-ollama-translator-sidebar__control-row\s*{[^}]*grid-template-columns: 80px minmax\(0, 1fr\)/);
-	assert.match(styles, /\.pdf-ollama-translator-sidebar__control-actions\s*{[^}]*justify-content: flex-start[^}]*gap: 8px/);
+	// Forcing the right split to 368px is what pushed the sidebar past the window edge.
+	assert.doesNotMatch(styles, /min-width:\s*368px/);
+	assert.doesNotMatch(sidebar, /pdf-ollama-translator-sidebar-(?:leaf|split)/);
+	assert.match(styles, /\.pdf-ollama-translator-sidebar\s*{[^}]*min-width:\s*0/);
+	assert.match(styles, /container:\s*translator-sidebar\s*\/\s*inline-size/);
+	assert.match(styles, /@container translator-sidebar \(inline-size < 340px\)/);
+	assert.match(styles, /\.pdf-ollama-translator-sidebar__control-actions\s*{[^}]*flex-wrap:\s*wrap/);
+	assert.match(styles, /\.pdf-ollama-translator-sidebar__control-row\s*{[^}]*grid-template-columns: minmax\(56px, 80px\) minmax\(0, 1fr\)/);
 	assert.doesNotMatch(styles, /\.pdf-ollama-translator-sidebar__(?:highlight-palette|quick-actions|copy-actions)\s*{[^}]*gap:/);
 	assert.doesNotMatch(styles, /\.pdf-ollama-translator-sidebar__quick-row\s*{[\s\S]*?justify-content: space-between/);
 	assert.doesNotMatch(styles, /\.pdf-ollama-translator-sidebar__copy-row\s*{[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)/);
+	// "Add to note" moved to the end of the row above the copy row.
+	const quickRow = sidebar.indexOf("pdf-ollama-translator-sidebar__quick-row");
+	const addToNote = sidebar.indexOf("sidebar.addToNote");
+	const copyRow = sidebar.indexOf("pdf-ollama-translator-sidebar__copy-row");
+	assert.ok(quickRow >= 0 && addToNote > quickRow && addToNote < copyRow);
+});
+
+test("floating ball drags, snaps to edges, and opens the translation window", async () => {
+	const [ball, popup, main, styles, manifest] = await Promise.all([
+		readProjectFile("src/floatingBall.ts"),
+		readProjectFile("src/translationPopup.ts"),
+		readProjectFile("src/main.ts"),
+		readProjectFile("styles.css"),
+		readProjectFile("manifest.json"),
+	]);
+
+	assert.match(ball, /setIcon\(this\.rootEl, "languages"\)/);
+	assert.match(ball, /setPointerCapture\(event\.pointerId\)/);
+	assert.match(ball, /releasePointerCapture\(event\.pointerId\)/);
+	assert.match(ball, /EDGE_SNAP_DISTANCE/);
+	assert.match(ball, /this\.options\.onToggle\(\)/);
+	assert.match(ball, /this\.options\.onPositionChange\(next\)/);
+	assert.match(popup, /setAnchor\(rect: DOMRect\)/);
+	assert.match(popup, /reopen\(rect: DOMRect/);
+	assert.match(popup, /popup\.openSidebar/);
+	assert.match(main, /new FloatingBall\(/);
+	assert.match(main, /toggleFloatingWindow/);
+	assert.match(main, /setFloatingBallPosition/);
+	assert.match(main, /rightSplit\.expand\(\)/);
+	assert.match(main, /autoTranslateSelection: !Platform\.isMobile/);
+	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*border-radius:\s*50%/);
+	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*background-color:\s*var\(--interactive-accent\)/);
+	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*linear-gradient/);
+	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*touch-action:\s*none/);
+	assert.equal((JSON.parse(manifest) as { isDesktopOnly?: boolean }).isDesktopOnly, false);
 });
 
 test("pdf context menu stays non-destructive and PDF++ compatible", async () => {

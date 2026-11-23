@@ -5,7 +5,7 @@ import { getHighlightColor } from "./pdfHighlight/colors";
 
 type PopupState = "loading" | "success" | "error";
 
-interface PopupOptions {
+export interface PopupOptions {
 	showCopyButton: boolean;
 	showRetryButton: boolean;
 	defaultHighlightColor: HighlightColorId;
@@ -16,6 +16,11 @@ interface PopupOptions {
 	rememberSize: boolean;
 	width: number;
 	height: number;
+	/**
+	 * Summoned by the floating ball: open beside the anchor and offer the
+	 * sidebar shortcut, instead of hanging below the text selection.
+	 */
+	floatingMode: boolean;
 	onLanguageChange: (
 		sourceLanguage: TranslationLanguage,
 		targetLanguage: Exclude<TranslationLanguage, "auto">,
@@ -26,8 +31,12 @@ interface PopupOptions {
 	onHighlight: () => void;
 	onRemoveHighlight: () => void;
 	onAddNote: () => void;
+	onOpenSidebar: () => void;
 	onClose: () => void;
 }
+
+const WINDOW_MARGIN = 12;
+const BALL_GAP = 10;
 
 const SOURCE_LANGUAGE_OPTIONS: Array<{ value: TranslationLanguage; label: string }> = [
 	{ value: "auto", label: "Auto" },
@@ -88,11 +97,10 @@ export class TranslationPopup {
 		this.rootEl.style.setProperty("--pdf-ollama-translator-line-height", String(options.lineHeight));
 		this.rootEl.style.width = this.manualActionsOnly ? "max-content" : `${options.width}px`;
 		this.rootEl.style.height = this.manualActionsOnly ? "auto" : `${this.getPreferredHeight(options.height)}px`;
+		this.rootEl.toggleClass("pdf-ollama-translator-popup--floating", options.floatingMode);
 		this.renderLanguageControls();
 		this.renderActions();
-		if (this.lastRect) {
-			this.positionNear(this.lastRect);
-		}
+		this.reposition();
 	}
 
 	showLoading(rect: DOMRect, document: Document = activeDocument): void {
@@ -143,10 +151,33 @@ export class TranslationPopup {
 	}
 
 	reposition(): void {
-		if (!this.lastRect || this.rootEl.style.display === "none") {
+		if (!this.isVisible() || !this.lastRect) {
 			return;
 		}
 		this.positionNear(this.lastRect);
+	}
+
+	isVisible(): boolean {
+		return this.rootEl.style.display !== "none";
+	}
+
+	/** Re-anchor a visible window after the floating ball moves. */
+	setAnchor(rect: DOMRect): void {
+		this.lastRect = rect;
+		if (this.isVisible()) {
+			this.positionNear(rect);
+		}
+	}
+
+	/** Ball click when the window is closed: reopen the last result or the actions. */
+	reopen(rect: DOMRect, document: Document = activeDocument): void {
+		if (this.lastResult) {
+			this.render("success", this.lastResult);
+			this.showAt(rect, document);
+			this.fitToContent();
+			return;
+		}
+		this.showManualActions(rect, document);
 	}
 
 	containsTarget(target: EventTarget | null): boolean {
@@ -193,6 +224,10 @@ export class TranslationPopup {
 		if (this.options.showRetryButton) {
 			const retryButton = this.createIconButton("refresh-cw", t("popup.retryTranslation"));
 			retryButton.onClickEvent(() => this.options.onRetry());
+		}
+		if (this.options.floatingMode) {
+			const sidebarButton = this.createIconButton("panel-right", t("popup.openSidebar"));
+			sidebarButton.onClickEvent(() => this.options.onOpenSidebar());
 		}
 
 		const closeButton = this.createIconButton("x", t("popup.close"));
@@ -319,18 +354,46 @@ export class TranslationPopup {
 	}
 
 	private positionNear(rect: DOMRect): void {
-		const window = this.rootEl.ownerDocument.defaultView ?? activeWindow;
-		const margin = 12;
-		const popupRect = this.rootEl.getBoundingClientRect();
-		const desiredLeft = rect.left;
-		const desiredTop = rect.bottom + 8;
-		const maxLeft = window.innerWidth - popupRect.width - margin;
-		const maxTop = window.innerHeight - popupRect.height - margin;
-		const left = clamp(desiredLeft, margin, Math.max(margin, maxLeft));
-		const top = clamp(desiredTop, margin, Math.max(margin, maxTop));
+		if (this.options.floatingMode) {
+			this.positionBeside(rect);
+			return;
+		}
+		this.applyClampedPosition(rect.left, rect.bottom + 8);
+	}
 
-		this.rootEl.style.left = `${left}px`;
-		this.rootEl.style.top = `${top}px`;
+	/** Place the ball-summoned window on the side of the ball with more room. */
+	private positionBeside(ballRect: DOMRect): void {
+		const window = this.getWindow();
+		const popupRect = this.rootEl.getBoundingClientRect();
+		const centerX = ballRect.left + ballRect.width / 2;
+		const desiredLeft = centerX > window.innerWidth / 2
+			? ballRect.left - popupRect.width - BALL_GAP
+			: ballRect.right + BALL_GAP;
+		let desiredTop = ballRect.bottom - popupRect.height;
+		if (desiredTop < WINDOW_MARGIN) {
+			desiredTop = ballRect.bottom + BALL_GAP;
+		}
+		this.applyClampedPosition(desiredLeft, desiredTop);
+	}
+
+	private applyClampedPosition(left: number, top: number): void {
+		const window = this.getWindow();
+		const popupRect = this.rootEl.getBoundingClientRect();
+		const maxLeft = Math.max(WINDOW_MARGIN, window.innerWidth - popupRect.width - WINDOW_MARGIN);
+		const maxTop = Math.max(WINDOW_MARGIN, window.innerHeight - popupRect.height - WINDOW_MARGIN);
+		this.applyPosition(
+			clamp(left, WINDOW_MARGIN, maxLeft),
+			clamp(top, WINDOW_MARGIN, maxTop),
+		);
+	}
+
+	private getWindow(): Window {
+		return this.rootEl.ownerDocument.defaultView ?? activeWindow;
+	}
+
+	private applyPosition(left: number, top: number): void {
+		this.rootEl.style.left = `${Math.round(left)}px`;
+		this.rootEl.style.top = `${Math.round(top)}px`;
 	}
 
 	private fitToContent(): void {

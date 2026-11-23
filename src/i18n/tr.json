@@ -15,6 +15,8 @@
     "pdfOnly": "Yalnızca PDF",
     "autoTranslateSelection": "Seçili metni otomatik çevir",
     "enablePopup": "Okuyucu seçim penceresini etkinleştir",
+    "enableFloatingBall": "Yüzen top",
+    "enableFloatingBallDesc": "Ekran kenarlarına yapışan taşınabilir bir top gösterir; tıklayınca çeviri penceresi açılır.",
     "noteTarget": "Çeviri notu klasörü",
     "noteTargetDefault": "Her kaynak dosya için",
     "chooseNote": "Not seç",
@@ -82,6 +84,9 @@
     "clearAllHighlights": "Hepsini sil",
     "clearAllHighlightsConfirm": "Geçerli PDF'deki tüm LLM Translator vurguları kaldırılsın mı? Bu işlem geri alınamaz."
   },
+  "ball": {
+    "open": "Çeviri penceresini aç"
+  },
   "popup": {
     "translating": "Çevriliyor...",
     "translateSelection": "Çevir",
@@ -90,6 +95,7 @@
     "highlightSelection": "Seçili PDF metnini vurgula",
     "removeHighlight": "Seçili PDF vurgusunu kaldır",
     "retryTranslation": "Çeviriyi yeniden dene",
+    "openSidebar": "Çeviri kenar çubuğunu aç",
     "close": "Kapat",
     "sourceLanguage": "Kaynak dil",
     "swapLanguage": "Dilleri değiştir",

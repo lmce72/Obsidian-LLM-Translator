@@ -29,6 +29,7 @@ const result = await esbuild.build({
 					export class Notice {}
 					export class Setting {}
 					export class SecretComponent {}
+					export const Platform = { isMobile: false, isDesktop: true, isDesktopApp: true, isMobileApp: false };
 					export function setIcon() {}
 					export class TFile {
 						constructor(path) {

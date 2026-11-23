@@ -6,5 +6,5 @@
 	"description": "Translate selected text in the native PDF reader with local and cloud translation services.",
 	"author": "Kim Fischer",
 	"authorUrl": "",
-	"isDesktopOnly": true
+	"isDesktopOnly": false
 }

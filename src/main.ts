@@ -1,17 +1,19 @@
-import { Modal, Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
+import { Modal, Notice, Platform, Plugin, TFile, WorkspaceLeaf } from "obsidian";
 import { getProviderLabel, TranslatorService } from "./translatorService";
 import { DEFAULT_TRANSLATION_PROMPT, migrateTranslationPrompt } from "./translatorService";
 import { PdfSelectionReader } from "./pdfSelection";
 import { PdfContextMenuService } from "./pdfContextMenu";
 import { PdfOllamaTranslatorSettingTab } from "./settings";
 import { PDF_OLLAMA_TRANSLATOR_VIEW_TYPE, PdfOllamaTranslatorSidebarView } from "./sidebarView";
-import { TranslationPopup } from "./translationPopup";
+import { TranslationPopup, type PopupOptions } from "./translationPopup";
+import { FloatingBall } from "./floatingBall";
 import { PdfHighlightService } from "./pdfHighlight/PdfHighlightService";
 import { TranslationCache, buildCacheKey, normalizeCacheText } from "./translationCache";
 import { t } from "./i18n";
 import { appendTranslationNote, type TranslationNoteSnapshot } from "./noteExport";
 import type {
 	ConnectionTestResult,
+	FloatingBallPosition,
 	PdfOllamaTranslatorSettings,
 	PdfTextSelection,
 	SidebarTranslationState,
@@ -26,8 +28,11 @@ const DEFAULT_SETTINGS: PdfOllamaTranslatorSettings = {
 	cloudApiBaseUrl: "",
 	cloudApiKeySecretId: "",
 	cloudApiModel: "",
-	autoTranslateSelection: true,
+	// Touch selection is imprecise, so mobile starts with auto-translation off.
+	autoTranslateSelection: !Platform.isMobile,
 	enablePopup: true,
+	enableFloatingBall: true,
+	floatingBallPosition: null,
 	noteTargetPath: "",
 	enableContextMenu: true,
 	enableTranslationCache: true,
@@ -71,6 +76,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 	private contextMenuService: PdfContextMenuService;
 	private highlightService: PdfHighlightService;
 	private popup: TranslationPopup;
+	private floatingBall: FloatingBall | undefined;
 	private cache: TranslationCache | undefined;
 	private selectionTimer: number | undefined;
 	private activeRequest: AbortController | undefined;
@@ -112,27 +118,8 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			this.debug,
 			() => this.beginHighlightNoteEditing(),
 		);
-		this.popup = new TranslationPopup({
-			showCopyButton: this.settings.showCopyButton,
-			showRetryButton: this.settings.showRetryButton,
-			defaultHighlightColor: this.settings.defaultHighlightColor,
-			fontSize: this.settings.fontSize,
-			lineHeight: this.settings.lineHeight,
-			sourceLanguage: this.settings.sourceLanguage,
-			targetLanguage: this.settings.targetLanguage,
-			rememberSize: this.settings.rememberPopupSize,
-			width: this.settings.popupWidth,
-			height: this.settings.popupHeight,
-			onLanguageChange: (sourceLanguage, targetLanguage) =>
-				void this.updateSettings({ sourceLanguage, targetLanguage }),
-			onResize: (width, height) => void this.updateSettings({ popupWidth: width, popupHeight: height }),
-			onTranslate: () => void this.retryLastSelection(),
-			onRetry: () => void this.retryLastSelection(),
-			onHighlight: () => void this.highlightActiveSelection(),
-			onRemoveHighlight: () => void this.removeActiveSelectionHighlight(),
-			onAddNote: () => void this.addPopupTranslationToNote(),
-			onClose: () => this.hidePopup(),
-		});
+		this.popup = new TranslationPopup(this.getPopupOptions());
+		this.syncFloatingBall();
 
 		this.addSettingTab(new PdfOllamaTranslatorSettingTab(this.app, this));
 		this.registerSidebarView();
@@ -172,6 +159,8 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		this.contextMenuService?.destroy();
 		void this.highlightService?.flushAllPending();
 		this.highlightService?.destroy();
+		this.floatingBall?.destroy();
+		this.floatingBall = undefined;
 		this.popup?.destroy();
 	}
 
@@ -185,10 +174,12 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		if (translationKeys.some((key) => key in partial && partial[key] !== this.settings[key])) {
 			this.lastSelectionKey = "";
 		}
+		const disableFloatingBall = this.settings.enableFloatingBall && partial.enableFloatingBall === false;
 		this.settings = { ...this.settings, ...partial };
 		await this.saveSettings();
 		this.syncPopupOptions();
-		if (!this.settings.enablePopup) this.popup.hide();
+		this.syncFloatingBall();
+		if (!this.settings.enablePopup || disableFloatingBall) this.popup.hide();
 		this.refreshSidebarViews();
 	}
 
@@ -494,6 +485,9 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			new Notice(t("notice.cannotOpenSidebar"));
 			return;
 		}
+		// The right sidebar may still be collapsed: reveal it, otherwise the
+		// "open main interface" action appears to do nothing.
+		this.app.workspace.rightSplit.expand();
 		await leaf.setViewState({ type: PDF_OLLAMA_TRANSLATOR_VIEW_TYPE, active: true });
 	}
 
@@ -604,7 +598,11 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			return;
 		}
 
-		this.hidePopup();
+		// The floating ball's window is persistent: outside clicks must not
+		// dismiss it, otherwise it would vanish while selecting new text.
+		if (!this.settings.enableFloatingBall) {
+			this.hidePopup();
+		}
 		this.isPointerSelecting = true;
 		window.clearTimeout(this.selectionTimer);
 	}
@@ -656,7 +654,8 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			if (selection) {
 				this.lastSelection = selection;
 				const selectionKey = `${selection.text}:${Math.round(selection.rect.left)}:${Math.round(selection.rect.top)}`;
-				if (this.settings.enablePopup && selectionKey !== this.lastSelectionKey) {
+				// With the ball, the window opens on click instead of on every selection.
+				if (!this.settings.enableFloatingBall && this.settings.enablePopup && selectionKey !== this.lastSelectionKey) {
 					this.popup.showManualActions(selection.rect, selection.document);
 				}
 			}
@@ -689,8 +688,11 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 
 	private async translateSelection(selection: PdfTextSelection, force: boolean, fromPopup = false, bypassCache = force): Promise<void> {
 		const selectionKey = `${selection.text}:${Math.round(selection.rect.left)}:${Math.round(selection.rect.top)}`;
-		const showPopup = fromPopup || !this.isSidebarVisible();
+		// The ball's window is a separate surface, so it still updates while the
+		// sidebar is open. Without the ball, keep results in the sidebar.
+		const showPopup = fromPopup || this.settings.enableFloatingBall || !this.isSidebarVisible();
 		const shouldShowPopup = showPopup && this.settings.enablePopup;
+		const anchor = this.getPopupAnchor(selection);
 		if (selection.text.length > this.settings.maxSelectionChars) {
 			this.popupNoteSnapshot = undefined;
 			this.cancelActiveRequest();
@@ -698,7 +700,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			const message = t("notice.selectionExceedsLimit", { count: this.settings.maxSelectionChars });
 			this.updateSidebarState({ sourceText: selection.text, translatedText: "", status: "error", message });
 			if (shouldShowPopup) {
-				this.popup.showInfo(message, selection.rect, selection.document);
+				this.popup.showInfo(message, anchor, selection.document);
 			} else if (showPopup && force) {
 				new Notice(message);
 			}
@@ -712,7 +714,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			this.lastSelectionKey = fromPopup ? selectionKey : "";
 			this.updateSidebarState({ sourceText: selection.text, translatedText: "", status: "error", message: missingConfigMessage });
 			if (shouldShowPopup) {
-				this.popup.showError(missingConfigMessage, selection.rect, selection.document);
+				this.popup.showError(missingConfigMessage, anchor, selection.document);
 			} else if (showPopup && force) {
 				new Notice(missingConfigMessage);
 			}
@@ -744,6 +746,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 					},
 					selection,
 					shouldShowPopup,
+					anchor,
 				);
 				return;
 			}
@@ -757,7 +760,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		const request = new AbortController();
 		this.activeRequest = request;
 		if (shouldShowPopup) {
-			this.popup.showLoading(selection.rect, selection.document);
+			this.popup.showLoading(anchor, selection.document);
 		} else {
 			this.popup.hide();
 		}
@@ -782,7 +785,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 				signal: request.signal,
 			});
 			if (!request.signal.aborted) {
-				this.presentSuccess(result, selection, shouldShowPopup && this.settings.enablePopup);
+				this.presentSuccess(result, selection, shouldShowPopup && this.settings.enablePopup, anchor);
 				if (cacheEnabled && result.translatedText) {
 					this.cache!.set(key, {
 						translatedText: result.translatedText,
@@ -800,7 +803,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			const message = this.translator.toReadableError(error);
 			this.debug("Translation failed.", error);
 			if (shouldShowPopup && this.settings.enablePopup) {
-				this.popup.showError(message, selection.rect, selection.document);
+				this.popup.showError(message, anchor, selection.document);
 			}
 			this.updateSidebarState({
 				sourceText: selection.text,
@@ -815,12 +818,17 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		}
 	}
 
-	private presentSuccess(result: TranslationResult, selection: PdfTextSelection, shouldShowPopup: boolean): void {
+	private presentSuccess(
+		result: TranslationResult,
+		selection: PdfTextSelection,
+		shouldShowPopup: boolean,
+		anchor: DOMRect,
+	): void {
 		this.sidebarNoteSource = { file: selection.file, pageHint: selection.pageHint, selection };
 		this.popupNoteSnapshot = undefined;
 		if (shouldShowPopup) {
 			this.popupNoteSnapshot = { sourceText: result.sourceText, translatedText: result.translatedText, file: selection.file, pageHint: selection.pageHint, selection };
-			this.popup.showResult(result, selection.rect, selection.document);
+			this.popup.showResult(result, anchor, selection.document);
 		}
 		this.updateSidebarState({ sourceText: result.sourceText, translatedText: result.translatedText, status: "success", message: "" });
 	}
@@ -872,8 +880,8 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		}
 	}
 
-	private syncPopupOptions(): void {
-		this.popup.updateOptions({
+	private getPopupOptions(): PopupOptions {
+		return {
 			showCopyButton: this.settings.showCopyButton,
 			showRetryButton: this.settings.showRetryButton,
 			defaultHighlightColor: this.settings.defaultHighlightColor,
@@ -884,6 +892,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			rememberSize: this.settings.rememberPopupSize,
 			width: this.settings.popupWidth,
 			height: this.settings.popupHeight,
+			floatingMode: this.settings.enableFloatingBall,
 			onLanguageChange: (sourceLanguage, targetLanguage) =>
 				void this.updateSettings({ sourceLanguage, targetLanguage }),
 			onResize: (width, height) => void this.updateSettings({ popupWidth: width, popupHeight: height }),
@@ -892,8 +901,66 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			onHighlight: () => void this.highlightActiveSelection(),
 			onRemoveHighlight: () => void this.removeActiveSelectionHighlight(),
 			onAddNote: () => void this.addPopupTranslationToNote(),
+			onOpenSidebar: () => void this.activateSidebarView(),
 			onClose: () => this.hidePopup(),
+		};
+	}
+
+	private syncPopupOptions(): void {
+		this.popup.updateOptions(this.getPopupOptions());
+	}
+
+	private syncFloatingBall(): void {
+		if (!this.settings.enableFloatingBall) {
+			this.floatingBall?.destroy();
+			this.floatingBall = undefined;
+			return;
+		}
+		if (this.floatingBall) {
+			return;
+		}
+		this.floatingBall = new FloatingBall({
+			position: this.settings.floatingBallPosition,
+			onToggle: () => this.toggleFloatingWindow(),
+			onMove: () => {
+				if (this.popup.isVisible() && this.floatingBall) {
+					this.popup.setAnchor(this.floatingBall.getRect());
+				}
+			},
+			onPositionChange: (position) => void this.setFloatingBallPosition(position),
 		});
+	}
+
+	/**
+	 * Persist the ball position without a full settings update: `updateSettings`
+	 * re-renders the sidebar, which would reset its focus and scroll on every
+	 * drag release.
+	 */
+	async setFloatingBallPosition(position: FloatingBallPosition): Promise<void> {
+		this.settings.floatingBallPosition = position;
+		await this.saveSettings();
+	}
+
+	private toggleFloatingWindow(): void {
+		if (this.popup.isVisible()) {
+			this.popup.hide();
+			return;
+		}
+		const anchor = this.floatingBall?.getRect() ?? this.getViewportCenterRect();
+		this.popup.reopen(anchor, this.floatingBall?.getDocument() ?? activeDocument);
+	}
+
+	/** Where a translation result should appear: beside the ball, or below the selection. */
+	private getPopupAnchor(selection: PdfTextSelection): DOMRect {
+		const ball = this.floatingBall;
+		if (this.settings.enableFloatingBall && ball) {
+			// A selection in another window keeps its own geometry.
+			const selectionDocument = selection.document ?? activeDocument;
+			if (ball.getDocument() === selectionDocument) {
+				return ball.getRect();
+			}
+		}
+		return selection.rect;
 	}
 
 	private updateSidebarState(nextState: SidebarTranslationState): void {
@@ -945,6 +1012,13 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		}
 		const storedPrompt = typeof safe.customPrompt === "string" ? safe.customPrompt : DEFAULT_SETTINGS.customPrompt;
 		const customPrompt = migrateTranslationPrompt(storedPrompt);
+		// Accept the intermediate floating-window keys from earlier test builds.
+		const legacy = loaded as Record<string, unknown>;
+		const enableFloatingBall = typeof legacy.enableFloatingBall === "boolean"
+			? legacy.enableFloatingBall
+			: typeof legacy.enableFloatingWindow === "boolean"
+				? legacy.enableFloatingWindow
+				: DEFAULT_SETTINGS.enableFloatingBall;
 		this.settings = {
 			...DEFAULT_SETTINGS,
 			...safe,
@@ -952,6 +1026,10 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			cloudApiKeySecretId,
 			cloudApiModel: safe.cloudApiModel ?? DEFAULT_SETTINGS.cloudApiModel,
 			translationProvider: safe.translationProvider ?? DEFAULT_SETTINGS.translationProvider,
+			enableFloatingBall,
+			floatingBallPosition: normalizeFloatingBallPosition(
+				legacy.floatingBallPosition ?? legacy.floatingWindowPosition,
+			),
 			customPrompt,
 		};
 		if (Object.prototype.hasOwnProperty.call(loaded, "cloudApiKey") || customPrompt !== storedPrompt) {
@@ -976,6 +1054,17 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		}
 		console.debug("[LLM Translator]", message, detail ?? "");
 	};
+}
+
+function normalizeFloatingBallPosition(value: unknown): FloatingBallPosition | null {
+	if (!value || typeof value !== "object") {
+		return null;
+	}
+	const { x, y } = value as Record<string, unknown>;
+	if (typeof x !== "number" || typeof y !== "number" || !Number.isFinite(x) || !Number.isFinite(y)) {
+		return null;
+	}
+	return { x, y };
 }
 
 function toReadableMessage(error: unknown): string {

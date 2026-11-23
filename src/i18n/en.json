@@ -15,6 +15,8 @@
     "pdfOnly": "PDF only",
     "autoTranslateSelection": "Auto-translate selected text",
     "enablePopup": "Enable reader selection popup",
+    "enableFloatingBall": "Floating ball",
+    "enableFloatingBallDesc": "Show a draggable ball that snaps to screen edges and opens the translation window when clicked.",
     "noteTarget": "Translation note directory",
     "noteTargetDefault": "Per source file",
     "chooseNote": "Choose note",
@@ -82,6 +84,9 @@
     "clearAllHighlights": "Clear all",
     "clearAllHighlightsConfirm": "Remove every LLM Translator highlight from the current PDF? This cannot be undone."
   },
+  "ball": {
+    "open": "Open translation window"
+  },
   "popup": {
     "translating": "Translating...",
     "translateSelection": "Translate",
@@ -90,6 +95,7 @@
     "highlightSelection": "Highlight selected PDF text",
     "removeHighlight": "Remove selected PDF highlight",
     "retryTranslation": "Retry translation",
+    "openSidebar": "Open translation sidebar",
     "close": "Close",
     "sourceLanguage": "Source language",
     "swapLanguage": "Swap languages",

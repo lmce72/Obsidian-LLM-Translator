@@ -15,6 +15,8 @@
     "pdfOnly": "Nur PDF",
     "autoTranslateSelection": "Ausgewählten Text automatisch übersetzen",
     "enablePopup": "Auswahl-Popup aktivieren",
+    "enableFloatingBall": "Schwebender Ball",
+    "enableFloatingBallDesc": "Zeigt einen verschiebbaren Ball, der an Bildschirmrändern einrastet und beim Anklicken das Übersetzungsfenster öffnet.",
     "noteTarget": "Ordner für Übersetzungsnotizen",
     "noteTargetDefault": "Pro Quelldatei",
     "chooseNote": "Notiz auswählen",
@@ -82,6 +84,9 @@
     "clearAllHighlights": "Alle entfernen",
     "clearAllHighlightsConfirm": "Alle LLM-Translator-Markierungen aus der aktuellen PDF entfernen? Dies kann nicht rückgängig gemacht werden."
   },
+  "ball": {
+    "open": "Übersetzungsfenster öffnen"
+  },
   "popup": {
     "translating": "Wird übersetzt...",
     "translateSelection": "Übersetzen",
@@ -90,6 +95,7 @@
     "highlightSelection": "Ausgewählten PDF-Text markieren",
     "removeHighlight": "Ausgewählte PDF-Markierung entfernen",
     "retryTranslation": "Übersetzung erneut versuchen",
+    "openSidebar": "Übersetzungs-Seitenleiste öffnen",
     "close": "Schließen",
     "sourceLanguage": "Quellsprache",
     "swapLanguage": "Sprachen tauschen",

@@ -18,6 +18,54 @@
 	line-height: var(--pdf-ollama-translator-line-height, 1.6);
 }
 
+/* Floating ball: accent-tinted gradient with the lucide languages icon. */
+button.pdf-ollama-translator-ball {
+	position: fixed;
+	z-index: calc(var(--layer-popover) + 1);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 48px;
+	height: 48px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background-color: var(--interactive-accent);
+	background-image: linear-gradient(
+		135deg,
+		color-mix(in srgb, var(--interactive-accent) 84%, white) 0%,
+		var(--interactive-accent) 52%,
+		color-mix(in srgb, var(--interactive-accent) 80%, black) 100%
+	);
+	color: var(--text-on-accent);
+	box-shadow: var(--shadow-l);
+	cursor: grab;
+	touch-action: none;
+	-webkit-user-select: none;
+	user-select: none;
+	font: inherit;
+}
+
+button.pdf-ollama-translator-ball svg {
+	width: 24px;
+	height: 24px;
+	pointer-events: none;
+}
+
+button.pdf-ollama-translator-ball:hover {
+	filter: brightness(1.06);
+}
+
+button.pdf-ollama-translator-ball:focus-visible {
+	outline: 2px solid var(--text-accent);
+	outline-offset: 3px;
+}
+
+button.pdf-ollama-translator-ball.is-dragging {
+	cursor: grabbing;
+	box-shadow: var(--shadow-l), 0 0 0 4px color-mix(in srgb, var(--interactive-accent) 24%, transparent);
+}
+
 .pdf-ollama-translator-popup--actions-only {
 	min-width: 0;
 	min-height: 0;
@@ -41,6 +89,7 @@
 .pdf-ollama-translator-popup__language {
 	display: inline-flex;
 	align-items: center;
+	flex: 1 1 auto;
 	min-width: 0;
 	gap: 4px;
 }
@@ -320,20 +369,20 @@
 	align-items: center;
 }
 
+/* No min-width here: forcing the right split wider than the workspace is what
+   pushed the sidebar past the window edge. Rows below adapt to this container. */
 .pdf-ollama-translator-sidebar {
 	box-sizing: border-box;
 	display: flex;
 	height: 100%;
-	min-width: 368px;
+	min-width: 0;
 	flex-direction: column;
 	gap: 10px;
 	padding: 12px;
-	overflow: hidden;
-}
-
-.pdf-ollama-translator-sidebar-leaf,
-.pdf-ollama-translator-sidebar-split {
-	min-width: 368px;
+	overflow-x: clip;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	container: translator-sidebar / inline-size;
 }
 
 .pdf-ollama-translator-sidebar__header {
@@ -341,16 +390,25 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 8px;
+	min-width: 0;
 }
 
 .pdf-ollama-translator-sidebar__title {
 	display: inline-flex;
 	align-items: center;
+	flex: 1 1 auto;
 	gap: 8px;
 	min-width: 0;
 	color: var(--text-normal);
 	font-size: 20px;
 	font-weight: 700;
+}
+
+.pdf-ollama-translator-sidebar__title-text {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .pdf-ollama-translator-sidebar__title-icon {
@@ -368,7 +426,7 @@
 }
 
 .pdf-ollama-translator-sidebar__service-row {
-	grid-template-columns: minmax(0, 1fr) 32px minmax(92px, 0.7fr);
+	grid-template-columns: minmax(0, 1fr) auto minmax(72px, 0.7fr);
 }
 
 .pdf-ollama-translator-sidebar__language-row {
@@ -481,7 +539,7 @@
 
 .pdf-ollama-translator-sidebar__control-row {
 	display: grid;
-	grid-template-columns: 80px minmax(0, 1fr);
+	grid-template-columns: minmax(56px, 80px) minmax(0, 1fr);
 	align-items: center;
 	gap: 8px;
 	min-height: 40px;
@@ -492,7 +550,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: flex-start;
-	flex-wrap: nowrap;
+	flex-wrap: wrap;
 	gap: 8px;
 	min-width: 0;
 }
@@ -584,4 +642,55 @@
 	flex: 0 0 auto;
 	padding: 0 12px;
 	text-align: center;
+}
+
+/* Narrow panes: stack the label above the actions so controls never spill out. */
+@container translator-sidebar (inline-size < 340px) {
+	.pdf-ollama-translator-sidebar__control-row {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 4px;
+		padding: 6px 0;
+	}
+
+	.pdf-ollama-translator-sidebar__control-label {
+		white-space: normal;
+	}
+}
+
+/* Touch input needs larger targets than a mouse pointer. */
+@media (pointer: coarse) {
+	.pdf-ollama-translator-sidebar__select,
+	.pdf-ollama-translator-sidebar__primary-button,
+	.pdf-ollama-translator-sidebar__copy-button,
+	.pdf-ollama-translator-sidebar__icon-button,
+	.pdf-ollama-translator-sidebar__clear-button {
+		height: 44px;
+	}
+
+	.pdf-ollama-translator-sidebar__icon-button {
+		width: 44px;
+	}
+
+	.pdf-ollama-translator-sidebar__copy-label {
+		height: 44px;
+	}
+
+	.pdf-ollama-translator-popup__button,
+	.pdf-ollama-translator-popup__language-swap {
+		width: 36px;
+		height: 36px;
+	}
+
+	.pdf-ollama-translator-popup__language-select {
+		height: 36px;
+	}
+
+	.pdf-ollama-translator-popup__body {
+		height: calc(100% - 44px);
+	}
+
+	button.pdf-ollama-translator-ball {
+		width: 56px;
+		height: 56px;
+	}
 }

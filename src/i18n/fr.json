@@ -15,6 +15,8 @@
     "pdfOnly": "PDF uniquement",
     "autoTranslateSelection": "Traduire automatiquement le texte sélectionné",
     "enablePopup": "Activer la fenêtre de sélection",
+    "enableFloatingBall": "Bulle flottante",
+    "enableFloatingBallDesc": "Affiche une bulle déplaçable qui s'aligne sur les bords de l'écran et ouvre la fenêtre de traduction au clic.",
     "noteTarget": "Dossier des notes de traduction",
     "noteTargetDefault": "Par fichier source",
     "chooseNote": "Choisir une note",
@@ -82,6 +84,9 @@
     "clearAllHighlights": "Tout effacer",
     "clearAllHighlightsConfirm": "Supprimer tous les surlignages LLM Translator du PDF actuel ? Cette action est irréversible."
   },
+  "ball": {
+    "open": "Ouvrir la fenêtre de traduction"
+  },
   "popup": {
     "translating": "Traduction en cours...",
     "translateSelection": "Traduire",
@@ -90,6 +95,7 @@
     "highlightSelection": "Surligner le texte PDF sélectionné",
     "removeHighlight": "Supprimer le surlignage PDF sélectionné",
     "retryTranslation": "Réessayer la traduction",
+    "openSidebar": "Ouvrir le panneau de traduction",
     "close": "Fermer",
     "sourceLanguage": "Langue source",
     "swapLanguage": "Inverser les langues",

@@ -6,7 +6,7 @@
 # LLM Translator
 
 <p align="center">
-  <img src="https://img.shields.io/badge/platform-Obsidian%20Desktop-purple" alt="Platform">
+  <img src="https://img.shields.io/badge/platform-Obsidian%20Desktop%20%26%20Mobile-purple" alt="Platform">
   <img src="https://img.shields.io/github/v/release/KimFischer99/Obsidian-LLM-Translator" alt="Version">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
   <img src="https://img.shields.io/badge/interface-6%20languages-green" alt="Interface languages">
@@ -46,7 +46,9 @@
 
 ### 🎯 Smart Interaction
 
-- Auto-popup translation window on text selection
+- Draggable floating ball that snaps to screen edges; click it to open or close the translation window
+- Auto-popup translation window on text selection (off by default on mobile)
+- Translation window can jump straight to the sidebar, and follows the ball when it moves
 - Sidebar translation panel for manual input or the current selection
 - Copy / Retry / One-click language switch
 - Custom translation prompt for professional needs

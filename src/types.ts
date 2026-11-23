@@ -10,6 +10,8 @@ export interface PdfOllamaTranslatorSettings {
 	cloudApiModel: string;
 	autoTranslateSelection: boolean;
 	enablePopup: boolean;
+	enableFloatingBall: boolean;
+	floatingBallPosition: FloatingBallPosition | null;
 	noteTargetPath: string;
 	enableContextMenu: boolean;
 	enableTranslationCache: boolean;
@@ -35,6 +37,11 @@ export interface PdfOllamaTranslatorSettings {
 	ollamaOptionsJson: string;
 	cleanModelOutput: boolean;
 	debugLogging: boolean;
+}
+
+export interface FloatingBallPosition {
+	x: number;
+	y: number;
 }
 
 export type HighlightColorId = "yellow" | "red" | "blue" | "green" | "purple";

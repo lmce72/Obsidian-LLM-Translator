@@ -5,14 +5,10 @@ import { t } from "./i18n";
 import { HIGHLIGHT_COLOR_ORDER, getHighlightColor } from "./pdfHighlight/colors";
 
 export const PDF_OLLAMA_TRANSLATOR_VIEW_TYPE = "llm-translator-sidebar";
-const SIDEBAR_LEAF_CLASS = "pdf-ollama-translator-sidebar-leaf";
-const SIDEBAR_SPLIT_CLASS = "pdf-ollama-translator-sidebar-split";
 
 export class PdfOllamaTranslatorSidebarView extends ItemView {
 	private sourceInputEl: HTMLTextAreaElement | null = null;
 	private resultOutputEl: HTMLElement | null = null;
-	private sidebarLeafEl: HTMLElement | null = null;
-	private sidebarSplitEl: HTMLElement | null = null;
 
 	constructor(leaf: WorkspaceLeaf, private plugin: PdfOllamaTranslatorPlugin) {
 		super(leaf);
@@ -31,18 +27,10 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
-		this.sidebarLeafEl = this.containerEl.closest<HTMLElement>(".workspace-leaf");
-		this.sidebarSplitEl = this.sidebarLeafEl?.closest<HTMLElement>(".workspace-split.mod-right-split") ?? null;
-		this.sidebarLeafEl?.addClass(SIDEBAR_LEAF_CLASS);
-		this.sidebarSplitEl?.addClass(SIDEBAR_SPLIT_CLASS);
 		this.render();
 	}
 
 	async onClose(): Promise<void> {
-		this.sidebarLeafEl?.removeClass(SIDEBAR_LEAF_CLASS);
-		this.sidebarSplitEl?.removeClass(SIDEBAR_SPLIT_CLASS);
-		this.sidebarLeafEl = null;
-		this.sidebarSplitEl = null;
 		this.sourceInputEl = null;
 		this.resultOutputEl = null;
 	}
@@ -60,7 +48,7 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		const titleEl = headerEl.createDiv({ cls: "pdf-ollama-translator-sidebar__title" });
 		const iconEl = titleEl.createSpan({ cls: "pdf-ollama-translator-sidebar__title-icon" });
 		setIcon(iconEl, "languages");
-		titleEl.createSpan({ text: "LLM Translator" });
+		titleEl.createSpan({ text: "LLM Translator", cls: "pdf-ollama-translator-sidebar__title-text" });
 
 		const openSettingsButton = headerEl.createEl("button", {
 			cls: "pdf-ollama-translator-sidebar__icon-button",
@@ -268,6 +256,15 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		}).onClickEvent(() => {
 			this.plugin.clearSidebarState();
 		});
+		const addToNoteButton = quickActionsEl.createEl("button", {
+			text: t("sidebar.addToNote"),
+			cls: "pdf-ollama-translator-sidebar__copy-button",
+			attr: { title: t("sidebar.addToNote"), "aria-label": t("sidebar.addToNote") },
+		});
+		addToNoteButton.onClickEvent(() => void this.plugin.addSidebarTranslationToNote(
+			this.sourceInputEl?.value ?? "",
+			this.resultOutputEl?.innerText ?? "",
+		));
 
 		const copyRowEl = controlsEl.createDiv({
 			cls: "pdf-ollama-translator-sidebar__control-row pdf-ollama-translator-sidebar__copy-row",
@@ -279,15 +276,6 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		const copyActionsEl = copyRowEl.createDiv({
 			cls: "pdf-ollama-translator-sidebar__control-actions pdf-ollama-translator-sidebar__copy-actions",
 		});
-		const addToNoteButton = copyActionsEl.createEl("button", {
-			text: t("sidebar.note"),
-			cls: "pdf-ollama-translator-sidebar__copy-button",
-			attr: { title: t("sidebar.addToNote"), "aria-label": t("sidebar.addToNote") },
-		});
-		addToNoteButton.onClickEvent(() => void this.plugin.addSidebarTranslationToNote(
-			this.sourceInputEl?.value ?? "",
-			this.resultOutputEl?.innerText ?? "",
-		));
 		for (const item of [
 			{ label: t("sidebar.raw"), action: () => this.plugin.copySidebarText("raw") },
 			{ label: t("sidebar.result"), action: () => this.plugin.copySidebarText("result") },

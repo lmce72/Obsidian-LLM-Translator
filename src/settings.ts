@@ -74,6 +74,17 @@ export class PdfOllamaTranslatorSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
+			.setName(t("settings.enableFloatingBall"))
+			.setDesc(t("settings.enableFloatingBallDesc"))
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.enableFloatingBall)
+					.onChange(async (value) => {
+						await this.plugin.updateSettings({ enableFloatingBall: value });
+					}),
+			);
+
+		new Setting(containerEl)
 			.setName(t("settings.noteTarget"))
 			.setClass("pdf-ollama-translator-setting--centered")
 			.addText((text) => {

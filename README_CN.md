@@ -6,7 +6,7 @@
 # LLM Translator
 
 <p align="center">
-  <img src="https://img.shields.io/badge/platform-Obsidian%20Desktop-purple" alt="Platform">
+  <img src="https://img.shields.io/badge/platform-Obsidian%20Desktop%20%26%20Mobile-purple" alt="Platform">
   <img src="https://img.shields.io/github/v/release/KimFischer99/Obsidian-LLM-Translator" alt="Version">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
   <img src="https://img.shields.io/badge/interface-6%20languages-green" alt="Interface languages">
@@ -46,7 +46,9 @@
 
 ### 🎯 智能交互
 
-- 选中文本自动弹出翻译窗口
+- 可拖动的悬浮球，吸附屏幕边缘；点击展开或收起翻译窗口
+- 选中文本自动弹出翻译窗口（移动端默认关闭）
+- 翻译窗口可直接跳转到侧边栏，并跟随悬浮球移动
 - 侧边栏翻译面板，支持手动输入或使用当前选区
 - 复制译文 / 重试翻译 / 一键切换语言
 - 自定义翻译 Prompt，满足专业需求
