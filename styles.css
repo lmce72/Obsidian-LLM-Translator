@@ -597,11 +597,26 @@ button.pdf-ollama-translator-ball.is-dragging {
 	gap: 4px;
 }
 
+/* Title badge shared by the translate and history headers. */
 .pdf-ollama-translator-sidebar__title-icon {
 	display: inline-flex;
-	width: 22px;
-	height: 22px;
-	color: var(--text-accent);
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	width: 28px;
+	height: 28px;
+	padding: 4px;
+	border: 1px solid var(--interactive-accent);
+	border-radius: 6px;
+	background: var(--background-secondary);
+	background: color-mix(in srgb, var(--interactive-accent) 14%, var(--background-primary));
+	color: var(--interactive-accent);
+}
+
+.pdf-ollama-translator-sidebar__title-icon svg {
+	display: block;
+	width: 18px;
+	height: 18px;
 }
 
 .pdf-ollama-translator-sidebar__service-row,
@@ -863,18 +878,6 @@ button.pdf-ollama-translator-ball.is-dragging {
 	box-shadow: none;
 	font: inherit;
 	font-size: var(--font-ui-smaller);
-}
-
-.pdf-ollama-translator-history__title-icon {
-	box-sizing: border-box;
-	width: 28px;
-	height: 28px;
-	padding: 4px;
-	border: 1px solid var(--interactive-accent);
-	border-radius: 6px;
-	background: var(--background-secondary);
-	background: color-mix(in srgb, var(--interactive-accent) 14%, var(--background-primary));
-	color: var(--interactive-accent);
 }
 
 .pdf-ollama-translator-history__list {

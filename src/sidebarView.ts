@@ -115,9 +115,7 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		backButton.onClickEvent(() => this.showTranslator());
 
 		const titleEl = headerEl.createDiv({ cls: "pdf-ollama-translator-sidebar__title" });
-		const iconEl = titleEl.createSpan({
-			cls: "pdf-ollama-translator-sidebar__title-icon pdf-ollama-translator-history__title-icon",
-		});
+		const iconEl = titleEl.createSpan({ cls: "pdf-ollama-translator-sidebar__title-icon" });
 		setIcon(iconEl, "history");
 		titleEl.createSpan({ text: t("history.title"), cls: "pdf-ollama-translator-sidebar__title-text" });
 

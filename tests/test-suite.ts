@@ -533,7 +533,9 @@ test("floating ball opens an independent manual input window", async () => {
 	assert.match(sidebar, /historyQuery/);
 	assert.match(sidebar, /history__sort-select/);
 	assert.match(sidebar, /sortSourceAsc/);
-	assert.match(sidebar, /history__title-icon/);
+	assert.match(styles, /\.pdf-ollama-translator-sidebar__title-icon\s*{[^}]*align-items:\s*center/);
+	assert.match(styles, /\.pdf-ollama-translator-sidebar__title-icon\s*{[^}]*border:\s*1px solid var\(--interactive-accent\)/);
+	assert.match(styles, /\.pdf-ollama-translator-sidebar__title-icon svg\s*{[^}]*width:\s*18px/);
 	assert.match(manual, /history\.open/);
 	assert.match(ball, /snappedEdges/);
 	assert.match(ball, /applyViewportPosition/);
