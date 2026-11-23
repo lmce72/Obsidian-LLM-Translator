@@ -183,7 +183,7 @@ export class TranslationPopup {
 		this.languageEl.empty();
 		if (this.manualActionsOnly) {
 			const button = this.languageEl.createEl("button", {
-				cls: "pdf-ollama-translator-popup__button",
+				cls: "pdf-ollama-translator-popup__button clickable-icon",
 				attr: { "aria-label": t("popup.translateSelection"), title: t("popup.translateSelection") },
 			});
 			setIcon(button, "languages");
@@ -232,11 +232,13 @@ export class TranslationPopup {
 		sourceSelect.value = this.options.sourceLanguage;
 
 		const swapButton = this.languageEl.createEl("button", {
-			cls: "pdf-ollama-translator-popup__language-swap",
+			cls: "pdf-ollama-translator-popup__language-swap clickable-icon",
 			attr: { "aria-label": t("popup.swapLanguage"), title: t("popup.swapLanguage") },
 		});
 		setIcon(swapButton, "arrow-left-right");
-		swapButton.onpointerdown = (event) => event.preventDefault();
+		swapButton.onpointerdown = (event) => {
+			if (event.pointerType === "mouse") event.preventDefault();
+		};
 
 		const targetSelect = this.languageEl.createEl("select", {
 			cls: "pdf-ollama-translator-popup__language-select",
@@ -279,10 +281,12 @@ export class TranslationPopup {
 
 	private createIconButton(icon: string, label: string): HTMLButtonElement {
 		const button = this.actionsEl.createEl("button", {
-			cls: "pdf-ollama-translator-popup__button",
+			cls: "pdf-ollama-translator-popup__button clickable-icon",
 			attr: { "aria-label": label, title: label },
 		});
-		button.onpointerdown = (event) => event.preventDefault();
+		button.onpointerdown = (event) => {
+			if (event.pointerType === "mouse") event.preventDefault();
+		};
 		setIcon(button, icon);
 		return button;
 	}

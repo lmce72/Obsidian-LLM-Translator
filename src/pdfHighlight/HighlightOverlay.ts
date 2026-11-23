@@ -450,7 +450,7 @@ export class HighlightOverlay {
 		const layerRect = layer.getBoundingClientRect();
 		const anchorRect = anchor.getBoundingClientRect();
 		const iconEl = layer.createEl("button", {
-			cls: NOTE_ICON_CLASS,
+			cls: `${NOTE_ICON_CLASS} clickable-icon`,
 			attr: { type: "button", "aria-label": "Highlight note" },
 		});
 		iconEl.style.left = `${anchorRect.right - layerRect.left - 4}px`;
@@ -548,10 +548,12 @@ export class HighlightOverlay {
 		});
 		const footerEl = this.editorEl.createDiv({ cls: "pdf-ollama-translator-highlight-note-editor__footer" });
 		const copyButton = footerEl.createEl("button", {
-			cls: "pdf-ollama-translator-highlight-note-editor__copy",
+			cls: "pdf-ollama-translator-highlight-note-editor__copy clickable-icon",
 			attr: { "aria-label": t("highlight.copyNote"), title: t("highlight.copyNote") },
 		});
-		copyButton.onpointerdown = (event) => event.preventDefault();
+		copyButton.onpointerdown = (event) => {
+			if (event.pointerType === "mouse") event.preventDefault();
+		};
 		setIcon(copyButton, "copy");
 		copyButton.onClickEvent(async () => {
 			await navigator.clipboard.writeText(this.textareaEl?.value ?? "");

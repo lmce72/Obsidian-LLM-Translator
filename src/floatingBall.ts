@@ -44,7 +44,9 @@ export class FloatingBall {
 	private position: FloatingBallPosition | null;
 	private dragState: DragState | null = null;
 	private lastDragEnd = 0;
+	private suppressClickUntil = 0;
 	private saveTimer: number | undefined;
+	private viewportObserver: ResizeObserver;
 	private resizeHandler = () => {
 		this.applyPosition(this.getCurrentPosition());
 	};
@@ -52,7 +54,7 @@ export class FloatingBall {
 	constructor(private options: FloatingBallOptions) {
 		this.position = options.position;
 		this.rootEl = window.document.body.createEl("button", {
-			cls: "pdf-ollama-translator-ball",
+			cls: "pdf-ollama-translator-ball clickable-icon",
 			attr: {
 				type: "button",
 				"aria-label": t("ball.open"),
@@ -62,11 +64,16 @@ export class FloatingBall {
 		setIcon(this.rootEl, "languages");
 		this.rootEl.onpointerdown = (event) => this.startDrag(event);
 		this.rootEl.onpointermove = (event) => this.moveDrag(event);
-		this.rootEl.onpointerup = (event) => this.finishDrag(event);
-		this.rootEl.onpointercancel = (event) => this.finishDrag(event);
-		this.rootEl.onlostpointercapture = (event) => this.finishDrag(event);
+		this.rootEl.onpointerup = (event) => this.finishDrag(event, true);
+		this.rootEl.onpointercancel = (event) => this.finishDrag(event, false);
+		this.rootEl.onlostpointercapture = (event) => this.finishDrag(event, false);
 		this.rootEl.onkeydown = (event) => this.moveWithKeyboard(event);
 		this.rootEl.onClickEvent((event) => {
+			// Pointer taps activate from pointerup; this click is the synthetic
+			// follow-up (or a keyboard activation, which has no pointerup).
+			if (Date.now() < this.suppressClickUntil) {
+				return;
+			}
 			if (Date.now() - this.lastDragEnd < CLICK_AFTER_DRAG_MS) {
 				return;
 			}
@@ -74,11 +81,21 @@ export class FloatingBall {
 			this.options.onToggle();
 		});
 		this.getWindow().addEventListener("resize", this.resizeHandler);
+		this.getWindow().visualViewport?.addEventListener("resize", this.resizeHandler);
+		// CDP/emulation and mobile rotation can change the layout without a
+		// window resize event; clamp the ball back into view either way.
+		this.viewportObserver = new ResizeObserver(() => this.resizeHandler());
+		this.viewportObserver.observe(this.rootEl.ownerDocument.documentElement);
 		this.applyPosition(this.position ?? this.getDefaultPosition());
 	}
 
 	getRect(): DOMRect {
 		return this.rootEl.getBoundingClientRect();
+	}
+
+	/** Re-clamp after a viewport change that did not fire a resize event. */
+	ensureVisible(): void {
+		this.applyPosition(this.getCurrentPosition());
 	}
 
 	getDocument(): Document {
@@ -87,6 +104,8 @@ export class FloatingBall {
 
 	destroy(): void {
 		this.getWindow().removeEventListener("resize", this.resizeHandler);
+		this.getWindow().visualViewport?.removeEventListener("resize", this.resizeHandler);
+		this.viewportObserver.disconnect();
 		this.getWindow().clearTimeout(this.saveTimer);
 		this.rootEl.remove();
 	}
@@ -164,7 +183,7 @@ export class FloatingBall {
 		this.options.onMove(next);
 	}
 
-	private finishDrag(event: PointerEvent): void {
+	private finishDrag(event: PointerEvent, allowToggle: boolean): void {
 		const state = this.dragState;
 		if (!state || event.pointerId !== state.pointerId) {
 			return;
@@ -175,6 +194,11 @@ export class FloatingBall {
 			this.rootEl.releasePointerCapture(event.pointerId);
 		}
 		if (!state.moved) {
+			// Touch taps can suppress the compatibility click; activate here.
+			if (allowToggle) {
+				this.suppressClickUntil = Date.now() + 500;
+				this.options.onToggle();
+			}
 			return;
 		}
 		this.lastDragEnd = Date.now();

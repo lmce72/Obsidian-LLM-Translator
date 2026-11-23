@@ -503,6 +503,9 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		// "open main interface" action appears to do nothing.
 		this.app.workspace.rightSplit.expand();
 		await leaf.setViewState({ type: PDF_OLLAMA_TRANSLATOR_VIEW_TYPE, active: true });
+		// On mobile the right sidebar is a drawer; the leaf is created detached
+		// and only revealLeaf mounts it and slides the drawer in.
+		this.app.workspace.revealLeaf(leaf);
 	}
 
 	private registerSelectionEvents(): void {
@@ -610,6 +613,13 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		}
 		if (this.popup.containsTarget(event.target)) {
 			return;
+		}
+
+		// Fallback for viewport changes (rotation, emulation) that skip resize:
+		// keep the ball and its window reachable on the next interaction.
+		this.floatingBall?.ensureVisible();
+		if (this.manualWindow?.isVisible() && this.floatingBall) {
+			this.manualWindow.setAnchor(this.floatingBall.getRect());
 		}
 
 		this.hidePopup();

@@ -500,6 +500,11 @@ test("floating ball opens an independent manual input window", async () => {
 	assert.match(ball, /EDGE_SNAP_DISTANCE/);
 	assert.match(ball, /this\.options\.onToggle\(\)/);
 	assert.match(ball, /this\.options\.onPositionChange\(next\)/);
+	assert.match(ball, /visualViewport\?\.addEventListener\("resize"/);
+	assert.match(ball, /viewportObserver\.observe\(this\.rootEl\.ownerDocument\.documentElement\)/);
+	assert.match(ball, /ensureVisible\(\): void/);
+	assert.match(main, /this\.floatingBall\?\.ensureVisible\(\)/);
+	assert.match(manual, /viewportObserver\.observe\(this\.rootEl\.ownerDocument\.documentElement\)/);
 
 	// The ball opens its own manual window, not the selection popup.
 	assert.match(manual, /class ManualTranslationWindow/);
@@ -520,11 +525,13 @@ test("floating ball opens an independent manual input window", async () => {
 	assert.match(main, /new FloatingBall\(/);
 	assert.match(main, /setFloatingBallPosition/);
 	assert.match(main, /rightSplit\.expand\(\)/);
+	assert.match(main, /revealLeaf\(leaf\)/);
 	assert.match(main, /autoTranslateSelection: !Platform\.isMobile/);
 	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*border-radius:\s*50%/);
 	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*background-color:\s*var\(--interactive-accent\)/);
 	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*linear-gradient/);
 	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*touch-action:\s*none/);
+	assert.match(styles, /\.is-mobile button\.pdf-ollama-translator-ball\s*{[^}]*touch-action:\s*none/);
 	assert.match(styles, /--translator-ball-size:\s*clamp\(34px, calc\(3vmin \+ 0\.75vmax\), 40px\)/);
 	assert.match(styles, /width:\s*calc\(var\(--translator-ball-size\) \* 0\.4\)/);
 	assert.equal((JSON.parse(manifest) as { isDesktopOnly?: boolean }).isDesktopOnly, false);

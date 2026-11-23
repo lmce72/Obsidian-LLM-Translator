@@ -70,6 +70,12 @@ button.pdf-ollama-translator-ball.is-dragging {
 	box-shadow: var(--shadow-l), 0 0 0 4px color-mix(in srgb, var(--interactive-accent) 24%, transparent);
 }
 
+/* Obsidian's mobile button rules set touch-action: manipulation; keep touch
+   dragging instead of letting the WebView steal the gesture for panning. */
+.is-mobile button.pdf-ollama-translator-ball {
+	touch-action: none;
+}
+
 /* Ball-launched manual input window: independent from the selection popup. */
 .pdf-ollama-translator-manual {
 	position: fixed;

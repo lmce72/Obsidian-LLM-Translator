@@ -52,7 +52,7 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		titleEl.createSpan({ text: "LLM Translator", cls: "pdf-ollama-translator-sidebar__title-text" });
 
 		const openSettingsButton = headerEl.createEl("button", {
-			cls: "pdf-ollama-translator-sidebar__icon-button",
+			cls: "pdf-ollama-translator-sidebar__icon-button clickable-icon",
 			attr: { title: t("sidebar.openSettings"), "aria-label": t("sidebar.openSettings") },
 		});
 		setIcon(openSettingsButton, "settings");
@@ -86,7 +86,7 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		};
 
 		const testButton = rowEl.createEl("button", {
-			cls: "pdf-ollama-translator-sidebar__icon-button",
+			cls: "pdf-ollama-translator-sidebar__icon-button clickable-icon",
 			attr: { title: t("sidebar.testConnection"), "aria-label": t("sidebar.testConnection") },
 		});
 		setIcon(testButton, "plug-zap");
@@ -124,11 +124,13 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		};
 
 		const swapButton = rowEl.createEl("button", {
-			cls: "pdf-ollama-translator-sidebar__icon-button",
+			cls: "pdf-ollama-translator-sidebar__icon-button clickable-icon",
 			attr: { "aria-label": t("popup.swapLanguage"), title: t("popup.swapLanguage") },
 		});
 		setIcon(swapButton, "arrow-left-right");
-		swapButton.onpointerdown = (event) => event.preventDefault();
+		swapButton.onpointerdown = (event) => {
+			if (event.pointerType === "mouse") event.preventDefault();
+		};
 
 		const targetEl = rowEl.createEl("select", { cls: "pdf-ollama-translator-sidebar__select" });
 		for (const option of TARGET_LANGUAGES) {
@@ -287,7 +289,7 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 			const color = getHighlightColor(colorId);
 			const colorLabel = t(`highlight.color.${colorId}`);
 			const button = paletteEl.createEl("button", {
-				cls: "pdf-ollama-translator-sidebar__highlight-swatch",
+				cls: "pdf-ollama-translator-sidebar__highlight-swatch clickable-icon",
 				attr: {
 					"aria-label": colorLabel,
 					"aria-pressed": String(this.plugin.settings.defaultHighlightColor === colorId),

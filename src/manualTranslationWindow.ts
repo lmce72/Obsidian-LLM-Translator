@@ -41,6 +41,7 @@ export class ManualTranslationWindow {
 	private anchor: DOMRect | null = null;
 	private options: ManualWindowOptions;
 	private resizeObserver: ResizeObserver;
+	private viewportObserver: ResizeObserver;
 	private resizeHandler = () => {
 		if (this.isVisible() && this.anchor) {
 			this.positionBeside(this.anchor);
@@ -68,11 +69,13 @@ export class ManualTranslationWindow {
 		this.sourceSelectEl.onchange = () => this.commitLanguages();
 
 		const swapButton = languageEl.createEl("button", {
-			cls: "pdf-ollama-translator-manual__icon-button",
+			cls: "pdf-ollama-translator-manual__icon-button clickable-icon",
 			attr: { "aria-label": t("popup.swapLanguage"), title: t("popup.swapLanguage") },
 		});
 		setIcon(swapButton, "arrow-left-right");
-		swapButton.onpointerdown = (event) => event.preventDefault();
+		swapButton.onpointerdown = (event) => {
+			if (event.pointerType === "mouse") event.preventDefault();
+		};
 		swapButton.onClickEvent(() => this.swapLanguages());
 
 		this.targetSelectEl = languageEl.createEl("select", {
@@ -128,8 +131,11 @@ export class ManualTranslationWindow {
 
 		this.updateOptions(options);
 		this.getWindow().addEventListener("resize", this.resizeHandler);
+		this.getWindow().visualViewport?.addEventListener("resize", this.resizeHandler);
 		this.resizeObserver = new ResizeObserver(() => this.resizeHandler());
 		this.resizeObserver.observe(this.rootEl);
+		this.viewportObserver = new ResizeObserver(() => this.resizeHandler());
+		this.viewportObserver.observe(this.rootEl.ownerDocument.documentElement);
 	}
 
 	updateOptions(options: ManualWindowOptions): void {
@@ -196,7 +202,9 @@ export class ManualTranslationWindow {
 
 	destroy(): void {
 		this.resizeObserver.disconnect();
+		this.viewportObserver.disconnect();
 		this.getWindow().removeEventListener("resize", this.resizeHandler);
+		this.getWindow().visualViewport?.removeEventListener("resize", this.resizeHandler);
 		this.rootEl.remove();
 	}
 
@@ -207,10 +215,12 @@ export class ManualTranslationWindow {
 		handler: () => void,
 	): HTMLButtonElement {
 		const button = container.createEl("button", {
-			cls: "pdf-ollama-translator-manual__icon-button",
+			cls: "pdf-ollama-translator-manual__icon-button clickable-icon",
 			attr: { "aria-label": label, title: label, type: "button" },
 		});
-		button.onpointerdown = (event) => event.preventDefault();
+		button.onpointerdown = (event) => {
+			if (event.pointerType === "mouse") event.preventDefault();
+		};
 		setIcon(button, icon);
 		button.onClickEvent(handler);
 		return button;
