@@ -17,7 +17,7 @@
     "enablePopup": "Enable reader selection popup",
     "enableFloatingBall": "Floating ball",
     "enableFloatingBallDesc": "Show a draggable ball that snaps to screen edges and opens the translation window when clicked.",
-    "noteTarget": "Translation note directory",
+    "noteTarget": "Note location",
     "noteTargetDefault": "Per source file",
     "chooseNote": "Choose note",
     "enableContextMenu": "Enable right-click translate",
@@ -57,7 +57,17 @@
     "repeatPenaltyDesc": "Reduce the probability of repeated output.",
     "numPredictDesc": "Maximum number of tokens to generate per request.",
     "test": "Test",
-    "testing": "Testing..."
+    "testing": "Testing...",
+    "selectionScope": "Selection translation scope",
+    "selectionScopeDesc": "All views includes plugin views; Documents only limits selection translation to PDF and Markdown; Never disables selection translation (the sidebar and floating ball still translate manually).",
+    "scopeAll": "All views",
+    "scopeDocuments": "Documents only",
+    "scopeNever": "Never",
+    "enablePopupDesc": "When off, selection results only update the sidebar instead of the reader popup.",
+    "noteTargetDesc": "Per source file creates a note next to the source; Folder puts one note per source file into that folder; Note appends every translation to that one note.",
+    "chooseFolder": "Choose folder",
+    "folderTarget": "Folder",
+    "noteTargetSingle": "Note"
   },
   "sidebar": {
     "title": "Translate",
@@ -82,7 +92,8 @@
     "addToNote": "Add to note",
     "highlightColor": "Highlight",
     "clearAllHighlights": "Clear all",
-    "clearAllHighlightsConfirm": "Remove every LLM Translator highlight from the current PDF? This cannot be undone."
+    "clearAllHighlightsConfirm": "Remove every LLM Translator highlight from the current PDF? This cannot be undone.",
+    "selectionScope": "Selection"
   },
   "ball": {
     "open": "Open translation window"

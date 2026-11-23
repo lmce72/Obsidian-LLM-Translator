@@ -1,12 +1,20 @@
-import { App, DropdownComponent, FuzzySuggestModal, Notice, PluginSettingTab, SecretComponent, Setting, TFile } from "obsidian";
+import { App, DropdownComponent, FuzzySuggestModal, Notice, PluginSettingTab, SecretComponent, Setting, TFolder, TFile, type TextComponent } from "obsidian";
 import type PdfOllamaTranslatorPlugin from "./main";
 import { DEFAULT_TRANSLATION_PROMPT } from "./translatorService";
-import type { HighlightColorId, TranslationLanguage, TranslationProviderId } from "./types";
+import type {
+	HighlightColorId,
+	NoteTargetKind,
+	SelectionTranslationScope,
+	TranslationLanguage,
+	TranslationProviderId,
+} from "./types";
 import { t } from "./i18n";
 import { HIGHLIGHT_COLOR_ORDER } from "./pdfHighlight/colors";
 import { SOURCE_LANGUAGES, TARGET_LANGUAGES } from "./languageOptions";
 
 export class PdfOllamaTranslatorSettingTab extends PluginSettingTab {
+	private noteTargetText: TextComponent | undefined;
+
 	constructor(app: App, private plugin: PdfOllamaTranslatorPlugin) {
 		super(app, plugin);
 	}
@@ -15,32 +23,28 @@ export class PdfOllamaTranslatorSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 		containerEl.addClass("pdf-ollama-translator-settings");
+		this.noteTargetText = undefined;
 
 		this.addSection(t("settings.section.general"));
 		new Setting(containerEl)
-			.setName(t("settings.translationScope"))
+			.setName(t("settings.selectionScope"))
+			.setDesc(t("settings.selectionScopeDesc"))
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption("global", t("settings.global"))
-					.addOption("pdf-only", t("settings.pdfOnly"))
-					.setValue(this.plugin.settings.translationScope)
+					.addOption("all", t("settings.scopeAll"))
+					.addOption("documents", t("settings.scopeDocuments"))
+					.addOption("never", t("settings.scopeNever"))
+					.setValue(this.plugin.settings.selectionTranslationScope)
 					.onChange(async (value) => {
-						await this.plugin.updateSettings({ translationScope: value as "global" | "pdf-only" });
-					}),
-			);
-
-		new Setting(containerEl)
-			.setName(t("settings.autoTranslateSelection"))
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.autoTranslateSelection)
-					.onChange(async (value) => {
-						await this.plugin.updateSettings({ autoTranslateSelection: value });
+						await this.plugin.updateSettings({
+							selectionTranslationScope: value as SelectionTranslationScope,
+						});
 					}),
 			);
 
 		new Setting(containerEl)
 			.setName(t("settings.enablePopup"))
+			.setDesc(t("settings.enablePopupDesc"))
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.enablePopup)
@@ -62,22 +66,29 @@ export class PdfOllamaTranslatorSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName(t("settings.noteTarget"))
+			.setDesc(t("settings.noteTargetDesc"))
 			.setClass("pdf-ollama-translator-setting--centered")
 			.addText((text) => {
-				text.setPlaceholder(t("settings.noteTargetDefault"))
-					.setValue(this.plugin.settings.noteTargetPath);
+				this.noteTargetText = text;
+				text.setPlaceholder(t("settings.noteTargetDefault"));
 				text.inputEl.readOnly = true;
+				this.renderNoteTargetValue();
 			})
+			.addButton((button) => button
+				.setButtonText(t("settings.chooseFolder"))
+				.onClick(() => new FolderTargetPicker(this.app, (folder) => {
+					void this.applyNoteTarget(folder.path, "folder");
+				}).open()))
 			.addButton((button) => button
 				.setButtonText(t("settings.chooseNote"))
 				.onClick(() => new NoteTargetPicker(this.app, (file) => {
-					void this.applyNoteTarget(file);
+					void this.applyNoteTarget(file.path, "note");
 				}).open()))
 			.addButton((button) => button
 				.setButtonText(t("settings.noteTargetDefault"))
 				.onClick(async () => {
-					await this.plugin.updateSettings({ noteTargetPath: "" });
-					this.display();
+					await this.plugin.updateSettings({ noteTargetKind: "auto", noteTargetPath: "" });
+					this.renderNoteTargetValue();
 				}));
 
 		new Setting(containerEl)
@@ -476,9 +487,38 @@ export class PdfOllamaTranslatorSettingTab extends PluginSettingTab {
 		new Setting(this.containerEl).setName(title).setHeading();
 	}
 
-	private async applyNoteTarget(file: TFile): Promise<void> {
-		await this.plugin.updateSettings({ noteTargetPath: file.path });
-		this.display();
+	private renderNoteTargetValue(): void {
+		const kind = this.plugin.settings.noteTargetKind;
+		const path = this.plugin.settings.noteTargetPath;
+		this.noteTargetText?.setValue(
+			kind === "folder"
+				? `${t("settings.folderTarget")} · ${path}`
+				: kind === "note" ? `${t("settings.noteTargetSingle")} · ${path}` : "",
+		);
+	}
+
+	private async applyNoteTarget(path: string, kind: NoteTargetKind): Promise<void> {
+		await this.plugin.updateSettings({ noteTargetPath: path, noteTargetKind: kind });
+		this.renderNoteTargetValue();
+	}
+}
+
+class FolderTargetPicker extends FuzzySuggestModal<TFolder> {
+	constructor(app: App, private choose: (folder: TFolder) => void) {
+		super(app);
+		this.setPlaceholder(t("settings.chooseFolder"));
+	}
+
+	getItems(): TFolder[] {
+		return this.app.vault.getAllLoadedFiles().filter((file): file is TFolder => file instanceof TFolder);
+	}
+
+	getItemText(folder: TFolder): string {
+		return folder.path;
+	}
+
+	onChooseItem(folder: TFolder): void {
+		this.choose(folder);
 	}
 }
 

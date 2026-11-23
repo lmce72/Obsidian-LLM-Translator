@@ -17,7 +17,7 @@
     "enablePopup": "Activer la fenêtre de sélection",
     "enableFloatingBall": "Bulle flottante",
     "enableFloatingBallDesc": "Affiche une bulle déplaçable qui s'aligne sur les bords de l'écran et ouvre la fenêtre de traduction au clic.",
-    "noteTarget": "Dossier des notes de traduction",
+    "noteTarget": "Emplacement des notes",
     "noteTargetDefault": "Par fichier source",
     "chooseNote": "Choisir une note",
     "translationService": "Service de traduction",
@@ -57,7 +57,17 @@
     "testing": "Test en cours...",
     "enableContextMenu": "Enable right-click translate",
     "enableTranslationCache": "Cache translation results",
-    "enableTranslationCacheDesc": "Reuse the cached result for identical source text instead of calling the model again."
+    "enableTranslationCacheDesc": "Reuse the cached result for identical source text instead of calling the model again.",
+    "selectionScope": "Portée de la traduction de sélection",
+    "selectionScopeDesc": "Toutes les vues inclut les vues de plugins ; Documents uniquement limite la traduction de sélection au PDF et au Markdown ; Jamais la désactive (le panneau et la bulle restent utilisables manuellement).",
+    "scopeAll": "Toutes les vues",
+    "scopeDocuments": "Documents uniquement",
+    "scopeNever": "Jamais",
+    "enablePopupDesc": "Désactivé : les résultats de sélection ne mettent à jour que le panneau, pas la fenêtre du lecteur.",
+    "noteTargetDesc": "Par fichier source crée une note à côté de la source ; Dossier place une note par fichier source dans ce dossier ; Note ajoute toutes les traductions à cette note.",
+    "chooseFolder": "Choisir un dossier",
+    "folderTarget": "Dossier",
+    "noteTargetSingle": "Note"
   },
   "sidebar": {
     "title": "Traduire",
@@ -82,7 +92,8 @@
     "addToNote": "Ajouter à la note",
     "highlightColor": "Surlignage",
     "clearAllHighlights": "Tout effacer",
-    "clearAllHighlightsConfirm": "Supprimer tous les surlignages LLM Translator du PDF actuel ? Cette action est irréversible."
+    "clearAllHighlightsConfirm": "Supprimer tous les surlignages LLM Translator du PDF actuel ? Cette action est irréversible.",
+    "selectionScope": "Sélection"
   },
   "ball": {
     "open": "Ouvrir la fenêtre de traduction"

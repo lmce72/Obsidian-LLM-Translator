@@ -1,7 +1,7 @@
-import { TFile, normalizePath, type App } from "obsidian";
+import { TFolder, TFile, normalizePath, type App } from "obsidian";
 import { t } from "./i18n";
 import { getHighlightColor } from "./pdfHighlight/colors";
-import type { HighlightColorId, PdfTextSelection } from "./types";
+import type { HighlightColorId, NoteTargetKind, PdfTextSelection } from "./types";
 
 export interface TranslationNoteSnapshot {
 	sourceText: string;
@@ -12,10 +12,15 @@ export interface TranslationNoteSnapshot {
 	highlightColor?: HighlightColorId;
 }
 
+export interface TranslationNoteTarget {
+	kind: NoteTargetKind;
+	path: string;
+}
+
 export async function appendTranslationNote(
 	app: App,
 	snapshot: TranslationNoteSnapshot,
-	customPath: string,
+	target: TranslationNoteTarget,
 	confirmCreate: (path: string) => Promise<boolean>,
 ): Promise<string | null> {
 	if (!snapshot.sourceText.trim() || !snapshot.translatedText.trim()) {
@@ -26,7 +31,23 @@ export async function appendTranslationNote(
 		throw new Error(t("note.sourceRequired"));
 	}
 
-	const path = customPath || normalizePath(`${sourceFile.parent?.path ?? ""}/${sourceFile.name}-Translation-Note.md`);
+	const isSingleNote = target.kind === "note";
+	let path: string;
+	if (isSingleNote) {
+		if (!target.path.trim()) {
+			throw new Error(t("note.invalidTarget"));
+		}
+		path = normalizePath(target.path);
+	} else if (target.kind === "folder") {
+		const folderPath = target.path.trim();
+		const folder = folderPath ? app.vault.getAbstractFileByPath(folderPath) : null;
+		if (!(folder instanceof TFolder)) {
+			throw new Error(t("note.invalidTarget"));
+		}
+		path = normalizePath(`${folderPath}/${sourceFile.name}-Translation-Note.md`);
+	} else {
+		path = normalizePath(`${sourceFile.parent?.path ?? ""}/${sourceFile.name}-Translation-Note.md`);
+	}
 	const marker = `<!-- llm-translator-source: ${encodeURIComponent(sourceFile.path)} -->`;
 	const borderColor = getHighlightColor(snapshot.highlightColor ?? "blue").css;
 	const sourceHref = escapeHtml(`${sourceFile.path}${snapshot.pageHint ? `#page=${snapshot.pageHint}` : ""}`);
@@ -45,14 +66,14 @@ export async function appendTranslationNote(
 			throw new Error(t("note.invalidTarget"));
 		}
 		await app.vault.process(existing, (content) => {
-			if (!customPath && !content.startsWith(`${marker}\n`)) {
+			if (!isSingleNote && !content.startsWith(`${marker}\n`)) {
 				throw new Error(t("note.pathConflict"));
 			}
 			return `${content}${content ? "\n\n" : ""}${entry}\n`;
 		});
 		return path;
 	}
-	if (customPath) throw new Error(t("note.invalidTarget"));
+	if (isSingleNote) throw new Error(t("note.invalidTarget"));
 	if (!await confirmCreate(path)) return null;
 	await app.vault.create(path, `${marker}\n\n${entry}\n`);
 	return path;

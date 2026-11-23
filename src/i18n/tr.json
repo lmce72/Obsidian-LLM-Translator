@@ -17,7 +17,7 @@
     "enablePopup": "Okuyucu seçim penceresini etkinleştir",
     "enableFloatingBall": "Yüzen top",
     "enableFloatingBallDesc": "Ekran kenarlarına yapışan taşınabilir bir top gösterir; tıklayınca çeviri penceresi açılır.",
-    "noteTarget": "Çeviri notu klasörü",
+    "noteTarget": "Not konumu",
     "noteTargetDefault": "Her kaynak dosya için",
     "chooseNote": "Not seç",
     "translationService": "Çeviri servisi",
@@ -57,7 +57,17 @@
     "testing": "Test ediliyor...",
     "enableContextMenu": "Enable right-click translate",
     "enableTranslationCache": "Cache translation results",
-    "enableTranslationCacheDesc": "Reuse the cached result for identical source text instead of calling the model again."
+    "enableTranslationCacheDesc": "Reuse the cached result for identical source text instead of calling the model again.",
+    "selectionScope": "Seçim çevirisi kapsamı",
+    "selectionScopeDesc": "Tüm görünümler eklenti görünümlerini içerir; Yalnızca belgeler seçim çevirisini PDF ve Markdown ile sınırlar; Hiçbir zaman seçim çevirisini kapatır (kenar çubuğu ve top ile elle çeviri sürer).",
+    "scopeAll": "Tüm görünümler",
+    "scopeDocuments": "Yalnızca belgeler",
+    "scopeNever": "Hiçbir zaman",
+    "enablePopupDesc": "Kapalıyken seçim sonuçları okuyucu penceresi yerine yalnızca kenar çubuğunu günceller.",
+    "noteTargetDesc": "Kaynak dosya başına kaynağın yanında bir not oluşturur; Klasör her kaynak dosya için o klasöre bir not koyar; Not tüm çevirileri tek nota ekler.",
+    "chooseFolder": "Klasör seç",
+    "folderTarget": "Klasör",
+    "noteTargetSingle": "Not"
   },
   "sidebar": {
     "title": "Çevir",
@@ -82,7 +92,8 @@
     "addToNote": "Nota ekle",
     "highlightColor": "Vurgu",
     "clearAllHighlights": "Hepsini sil",
-    "clearAllHighlightsConfirm": "Geçerli PDF'deki tüm LLM Translator vurguları kaldırılsın mı? Bu işlem geri alınamaz."
+    "clearAllHighlightsConfirm": "Geçerli PDF'deki tüm LLM Translator vurguları kaldırılsın mı? Bu işlem geri alınamaz.",
+    "selectionScope": "Seçim"
   },
   "ball": {
     "open": "Çeviri penceresini aç"

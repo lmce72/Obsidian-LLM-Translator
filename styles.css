@@ -760,6 +760,12 @@ button.pdf-ollama-translator-ball.is-dragging {
 	width: auto;
 }
 
+.pdf-ollama-translator-sidebar__scope-select {
+	width: auto;
+	min-width: 88px;
+	flex: 0 0 auto;
+}
+
 .pdf-ollama-translator-sidebar__clear-highlights-button {
 	margin-left: 0;
 	flex: 0 0 auto;

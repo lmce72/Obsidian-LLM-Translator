@@ -43,6 +43,7 @@ export class TranslationPopup {
 	private resizeObserver: ResizeObserver | null = null;
 	private resizeTimer: number | undefined;
 	private manualActionsOnly = false;
+	private selectionIsPdf = true;
 
 	constructor(options: PopupOptions) {
 		this.options = options;
@@ -129,6 +130,15 @@ export class TranslationPopup {
 		return this.rootEl.style.display !== "none";
 	}
 
+	/** Highlight actions only make sense for PDF text selections. */
+	setSelectionIsPdf(value: boolean): void {
+		if (this.selectionIsPdf === value) {
+			return;
+		}
+		this.selectionIsPdf = value;
+		this.renderActions();
+	}
+
 	containsTarget(target: EventTarget | null): boolean {
 		return Boolean(target && typeof target === "object" && "nodeType" in target && this.rootEl.contains(target as Node));
 	}
@@ -161,14 +171,16 @@ export class TranslationPopup {
 			noteButton.onClickEvent(() => this.options.onAddNote());
 		}
 
-		const highlightColor = getHighlightColor(this.options.defaultHighlightColor);
-		const highlightButton = this.createIconButton("highlighter", t("popup.highlightSelection"));
-		highlightButton.addClass("pdf-ollama-translator-popup__button--highlight");
-		highlightButton.style.setProperty("--pdf-ollama-translator-highlight-color", highlightColor.css);
-		highlightButton.onClickEvent(() => this.options.onHighlight());
+		if (this.selectionIsPdf) {
+			const highlightColor = getHighlightColor(this.options.defaultHighlightColor);
+			const highlightButton = this.createIconButton("highlighter", t("popup.highlightSelection"));
+			highlightButton.addClass("pdf-ollama-translator-popup__button--highlight");
+			highlightButton.style.setProperty("--pdf-ollama-translator-highlight-color", highlightColor.css);
+			highlightButton.onClickEvent(() => this.options.onHighlight());
 
-		const removeHighlightButton = this.createIconButton("eraser", t("popup.removeHighlight"));
-		removeHighlightButton.onClickEvent(() => this.options.onRemoveHighlight());
+			const removeHighlightButton = this.createIconButton("eraser", t("popup.removeHighlight"));
+			removeHighlightButton.onClickEvent(() => this.options.onRemoveHighlight());
+		}
 
 		if (this.options.showRetryButton) {
 			const retryButton = this.createIconButton("refresh-cw", t("popup.retryTranslation"));

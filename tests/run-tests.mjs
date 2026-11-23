@@ -39,6 +39,13 @@ const result = await esbuild.build({
 							this.parent = { path: path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "" };
 						}
 					}
+					export class TFolder {
+						constructor(path) {
+							this.path = path;
+							this.name = path.split("/").pop();
+							this.children = [];
+						}
+					}
 					export function normalizePath(path) { return path.split("/").filter(Boolean).join("/"); }
 					export function __setRequestUrl(handler) { globalThis.__obsidianRequestUrl = handler; }
 					export function requestUrl(params) { return globalThis.__obsidianRequestUrl(params); }

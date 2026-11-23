@@ -48,6 +48,8 @@
 
 - Draggable floating ball that snaps to screen edges; click it to open or close the translation window
 - Auto-popup translation window on text selection (off by default on mobile)
+- Selection scope: all views (including plugin views), documents only, or never
+- Translation notes can target a folder (one note per source) or a single note
 - Translation window can jump straight to the sidebar, and follows the ball when it moves
 - Sidebar translation panel for manual input or the current selection
 - Copy / Retry / One-click language switch

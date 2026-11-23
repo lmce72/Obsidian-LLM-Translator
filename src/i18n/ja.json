@@ -17,7 +17,7 @@
     "enablePopup": "選択時のポップアップを有効にする",
     "enableFloatingBall": "フローティングボール",
     "enableFloatingBallDesc": "画面端に吸着する移動可能なボールを表示し、クリックで翻訳ウィンドウを開きます。",
-    "noteTarget": "翻訳ノートの保存先",
+    "noteTarget": "ノートの場所",
     "noteTargetDefault": "元ファイルごと",
     "chooseNote": "ノートを選択",
     "translationService": "翻訳サービス",
@@ -57,7 +57,17 @@
     "testing": "テスト中...",
     "enableContextMenu": "Enable right-click translate",
     "enableTranslationCache": "Cache translation results",
-    "enableTranslationCacheDesc": "Reuse the cached result for identical source text instead of calling the model again."
+    "enableTranslationCacheDesc": "Reuse the cached result for identical source text instead of calling the model again.",
+    "selectionScope": "選択翻訳の範囲",
+    "selectionScopeDesc": "すべてのビューはプラグインビューを含みます。ドキュメントのみは PDF と Markdown に限定します。なしは選択翻訳を無効にします（サイドバーとボールから手動翻訳は可能）。",
+    "scopeAll": "すべてのビュー",
+    "scopeDocuments": "ドキュメントのみ",
+    "scopeNever": "なし",
+    "enablePopupDesc": "オフにすると、選択結果はリーダーのポップアップではなくサイドバーだけを更新します。",
+    "noteTargetDesc": "元ファイルごと：元ファイルの隣に翻訳ノートを作成。フォルダー：元ファイルごとに1つのノートをそのフォルダーへ。ノート：すべての翻訳を1つのノートに追加。",
+    "chooseFolder": "フォルダーを選択",
+    "folderTarget": "フォルダー",
+    "noteTargetSingle": "ノート"
   },
   "sidebar": {
     "title": "翻訳",
@@ -82,7 +92,8 @@
     "addToNote": "ノートに追加",
     "highlightColor": "ハイライト",
     "clearAllHighlights": "すべて削除",
-    "clearAllHighlightsConfirm": "現在の PDF から LLM Translator のハイライトをすべて削除しますか？この操作は元に戻せません。"
+    "clearAllHighlightsConfirm": "現在の PDF から LLM Translator のハイライトをすべて削除しますか？この操作は元に戻せません。",
+    "selectionScope": "選択"
   },
   "ball": {
     "open": "翻訳ウィンドウを開く"

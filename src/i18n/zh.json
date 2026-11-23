@@ -17,7 +17,7 @@
     "enablePopup": "启用阅读器划词弹窗",
     "enableFloatingBall": "悬浮球",
     "enableFloatingBallDesc": "显示可拖动、可吸附到屏幕边缘的悬浮球；点击它打开翻译窗口。",
-    "noteTarget": "翻译笔记目录",
+    "noteTarget": "笔记位置",
     "noteTargetDefault": "按来源文件",
     "chooseNote": "选择笔记",
     "enableContextMenu": "启用右键菜单翻译",
@@ -57,7 +57,17 @@
     "repeatPenaltyDesc": "降低重复输出的概率。",
     "numPredictDesc": "单次请求允许生成的最大 token 数。",
     "test": "测试",
-    "testing": "测试中..."
+    "testing": "测试中...",
+    "selectionScope": "划词翻译范围",
+    "selectionScopeDesc": "所有会在任意视图（含插件视图）中响应划词；仅文档只响应 PDF 与 Markdown；从不在选中文本时翻译，仍可用侧栏或悬浮球手动翻译。",
+    "scopeAll": "所有",
+    "scopeDocuments": "仅文档",
+    "scopeNever": "从不",
+    "enablePopupDesc": "关闭后划词结果只更新侧栏，不弹出阅读器窗口。",
+    "noteTargetDesc": "按来源文件：在源文件旁生成翻译笔记；文件夹：每个来源文件一个笔记放入该文件夹；笔记：所有翻译追加到这个笔记。",
+    "chooseFolder": "选择文件夹",
+    "folderTarget": "文件夹",
+    "noteTargetSingle": "笔记"
   },
   "sidebar": {
     "title": "翻译",
@@ -82,7 +92,8 @@
     "addToNote": "加入笔记",
     "highlightColor": "高亮",
     "clearAllHighlights": "清除全部",
-    "clearAllHighlightsConfirm": "确定清除当前 PDF 中所有 LLM Translator 高亮吗？此操作不可撤销。"
+    "clearAllHighlightsConfirm": "确定清除当前 PDF 中所有 LLM Translator 高亮吗？此操作不可撤销。",
+    "selectionScope": "划词翻译"
   },
   "ball": {
     "open": "打开翻译窗口"

@@ -1,6 +1,6 @@
 import { ItemView, Notice, WorkspaceLeaf, setIcon } from "obsidian";
 import type PdfOllamaTranslatorPlugin from "./main";
-import type { TranslationLanguage, TranslationProviderId } from "./types";
+import type { SelectionTranslationScope, TranslationLanguage, TranslationProviderId } from "./types";
 import { t } from "./i18n";
 import { HIGHLIGHT_COLOR_ORDER, getHighlightColor } from "./pdfHighlight/colors";
 import { SOURCE_LANGUAGES, TARGET_LANGUAGES } from "./languageOptions";
@@ -354,18 +354,26 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 		const quickRowEl = controlsEl.createDiv({
 			cls: "pdf-ollama-translator-sidebar__control-row pdf-ollama-translator-sidebar__quick-row",
 		});
-		quickRowEl.createSpan({ text: t("sidebar.autoTrans"), cls: "pdf-ollama-translator-sidebar__control-label" });
+		quickRowEl.createSpan({ text: t("sidebar.selectionScope"), cls: "pdf-ollama-translator-sidebar__control-label" });
 		const quickActionsEl = quickRowEl.createDiv({
 			cls: "pdf-ollama-translator-sidebar__control-actions pdf-ollama-translator-sidebar__quick-actions",
 		});
-		const autoToggle = quickActionsEl.createEl("input", {
-			cls: "pdf-ollama-translator-sidebar__toggle",
-			attr: { type: "checkbox", "aria-label": t("sidebar.autoTransLabel") },
+		const scopeEl = quickActionsEl.createEl("select", {
+			cls: "pdf-ollama-translator-sidebar__select pdf-ollama-translator-sidebar__scope-select",
+			attr: { "aria-label": t("sidebar.selectionScope") },
 		});
-		autoToggle.checked = this.plugin.settings.autoTranslateSelection;
-		autoToggle.onchange = async () => {
-			await this.plugin.updateSettings({ autoTranslateSelection: autoToggle.checked });
-			this.render();
+		for (const option of [
+			{ value: "all", label: t("settings.scopeAll") },
+			{ value: "documents", label: t("settings.scopeDocuments") },
+			{ value: "never", label: t("settings.scopeNever") },
+		]) {
+			scopeEl.createEl("option", { text: option.label, value: option.value });
+		}
+		scopeEl.value = this.plugin.settings.selectionTranslationScope;
+		scopeEl.onchange = () => {
+			void this.plugin.updateSettings({
+				selectionTranslationScope: scopeEl.value as SelectionTranslationScope,
+			});
 		};
 
 		quickActionsEl.createEl("button", {

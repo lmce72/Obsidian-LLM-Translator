@@ -1,18 +1,22 @@
 import type { TFile } from "obsidian";
 
+export type SelectionTranslationScope = "all" | "documents" | "never";
+
+export type NoteTargetKind = "auto" | "folder" | "note";
+
 export interface PdfOllamaTranslatorSettings {
-	translationScope: "global" | "pdf-only";
+	selectionTranslationScope: SelectionTranslationScope;
 	translationProvider: TranslationProviderId;
 	ollamaBaseUrl: string;
 	model: string;
 	cloudApiBaseUrl: string;
 	cloudApiKeySecretId: string;
 	cloudApiModel: string;
-	autoTranslateSelection: boolean;
 	enablePopup: boolean;
 	enableFloatingBall: boolean;
 	floatingBallPosition: FloatingBallPosition | null;
 	floatingBallSnap: FloatingBallSnap | null;
+	noteTargetKind: NoteTargetKind;
 	noteTargetPath: string;
 	enableContextMenu: boolean;
 	enableTranslationCache: boolean;

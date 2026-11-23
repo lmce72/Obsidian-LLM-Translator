@@ -17,26 +17,27 @@ import type {
 	ConnectionTestResult,
 	FloatingBallPosition,
 	FloatingBallSnap,
+	NoteTargetKind,
 	PdfOllamaTranslatorSettings,
+	SelectionTranslationScope,
 	PdfTextSelection,
 	SidebarTranslationState,
 	TranslationResult,
 } from "./types";
 
 const DEFAULT_SETTINGS: PdfOllamaTranslatorSettings = {
-	translationScope: "global",
+	selectionTranslationScope: Platform.isMobile ? "never" : "all",
 	translationProvider: "local-llm",
 	ollamaBaseUrl: "http://localhost:11434",
 	model: "RogerBen/HY-MT2-1.8B:latest",
 	cloudApiBaseUrl: "",
 	cloudApiKeySecretId: "",
 	cloudApiModel: "",
-	// Touch selection is imprecise, so mobile starts with auto-translation off.
-	autoTranslateSelection: !Platform.isMobile,
 	enablePopup: true,
 	enableFloatingBall: true,
 	floatingBallPosition: null,
 	floatingBallSnap: null,
+	noteTargetKind: "auto",
 	noteTargetPath: "",
 	enableContextMenu: true,
 	enableTranslationCache: true,
@@ -180,10 +181,10 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 
 	async updateSettings(partial: Partial<PdfOllamaTranslatorSettings>): Promise<void> {
 		const translationKeys: Array<keyof PdfOllamaTranslatorSettings> = [
-			"sourceLanguage", "targetLanguage", "translationProvider", "translationScope",
+			"sourceLanguage", "targetLanguage", "translationProvider", "selectionTranslationScope",
 			"ollamaBaseUrl", "model", "cloudApiBaseUrl", "cloudApiModel", "cloudApiKeySecretId",
 			"customPrompt", "topK", "topP", "repeatPenalty", "numPredict", "ollamaOptionsJson",
-			"cleanModelOutput", "restrictSourceLanguages", "autoTranslateSelection", "maxSelectionChars", "requestTimeoutMs",
+			"cleanModelOutput", "restrictSourceLanguages", "maxSelectionChars", "requestTimeoutMs",
 		];
 		if (translationKeys.some((key) => key in partial && partial[key] !== this.settings[key])) {
 			this.lastSelectionKey = "";
@@ -300,7 +301,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			const path = await appendTranslationNote(
 				this.app,
 				{ ...snapshot, highlightColor: highlightColor ?? undefined },
-				this.settings.noteTargetPath,
+				{ kind: this.settings.noteTargetKind, path: this.settings.noteTargetPath },
 				(path) => this.confirmCreateTranslationNote(path),
 			);
 			if (path) new Notice(t("note.saved"));
@@ -670,24 +671,15 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 
 	private scheduleSelectionTranslation(doc: Document): void {
 		window.clearTimeout(this.selectionTimer);
-		if (isHighlightNoteTarget(doc.activeElement)) {
+		if (this.settings.selectionTranslationScope === "never" || isHighlightNoteTarget(doc.activeElement)) {
 			return;
 		}
 		const selection = this.selectionReader.readSelection(doc);
-		if (selection) {
-			this.lastDocumentSelection = selection;
-		}
-		if (!this.settings.autoTranslateSelection) {
-			if (selection) {
-				this.lastSelection = selection;
-				const selectionKey = `${selection.text}:${Math.round(selection.rect.left)}:${Math.round(selection.rect.top)}`;
-				if (this.settings.enablePopup && selectionKey !== this.lastSelectionKey) {
-					this.popup.showManualActions(selection.rect, selection.document);
-				}
-			}
+		if (!selection) {
 			return;
 		}
-
+		this.lastDocumentSelection = selection;
+		this.lastSelection = selection;
 		this.selectionTimer = window.setTimeout(
 			() => void this.translateCurrentSelection(doc),
 			this.settings.debounceMs,
@@ -714,6 +706,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 
 	private async translateSelection(selection: PdfTextSelection, force: boolean, fromPopup = false, bypassCache = force): Promise<void> {
 		const selectionKey = `${selection.text}:${Math.round(selection.rect.left)}:${Math.round(selection.rect.top)}`;
+		this.popup.setSelectionIsPdf(Boolean(selection.file?.path.toLowerCase().endsWith(".pdf")));
 		const showPopup = fromPopup || !this.isSidebarVisible();
 		const shouldShowPopup = showPopup && this.settings.enablePopup;
 		if (selection.text.length > this.settings.maxSelectionChars) {
@@ -1167,6 +1160,20 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			: typeof legacy.enableFloatingWindow === "boolean"
 				? legacy.enableFloatingWindow
 				: DEFAULT_SETTINGS.enableFloatingBall;
+		const hadLegacySelectionMode = typeof legacy.autoTranslateSelection === "boolean"
+			|| legacy.translationScope === "global"
+			|| legacy.translationScope === "pdf-only";
+		const selectionTranslationScope: SelectionTranslationScope =
+			normalizeSelectionScope(legacy.selectionTranslationScope)
+			?? (hadLegacySelectionMode
+				? legacy.autoTranslateSelection === false
+					? "never"
+					: legacy.translationScope === "pdf-only" ? "documents" : "all"
+				: DEFAULT_SETTINGS.selectionTranslationScope);
+		const noteTargetKind: NoteTargetKind = normalizeNoteTargetKind(legacy.noteTargetKind)
+			?? (typeof legacy.noteTargetPath === "string" && legacy.noteTargetPath.trim()
+				? "note"
+				: DEFAULT_SETTINGS.noteTargetKind);
 		this.settings = {
 			...DEFAULT_SETTINGS,
 			...safe,
@@ -1179,9 +1186,18 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 				legacy.floatingBallPosition ?? legacy.floatingWindowPosition,
 			),
 			floatingBallSnap: normalizeFloatingBallSnap(legacy.floatingBallSnap),
+			selectionTranslationScope,
+			noteTargetKind,
 			customPrompt,
 		};
-		if (Object.prototype.hasOwnProperty.call(loaded, "cloudApiKey") || customPrompt !== storedPrompt) {
+		// Drop the superseded selection switches from old data.json files.
+		const settingsRecord = this.settings as unknown as Record<string, unknown>;
+		delete settingsRecord.translationScope;
+		delete settingsRecord.autoTranslateSelection;
+		if (Object.prototype.hasOwnProperty.call(loaded, "cloudApiKey")
+			|| Object.prototype.hasOwnProperty.call(loaded, "translationScope")
+			|| Object.prototype.hasOwnProperty.call(loaded, "autoTranslateSelection")
+			|| customPrompt !== storedPrompt) {
 			await this.saveSettings();
 		}
 	}
@@ -1214,6 +1230,14 @@ function normalizeFloatingBallPosition(value: unknown): FloatingBallPosition | n
 		return null;
 	}
 	return { x, y };
+}
+
+function normalizeSelectionScope(value: unknown): SelectionTranslationScope | null {
+	return value === "all" || value === "documents" || value === "never" ? value : null;
+}
+
+function normalizeNoteTargetKind(value: unknown): NoteTargetKind | null {
+	return value === "auto" || value === "folder" || value === "note" ? value : null;
 }
 
 function normalizeFloatingBallSnap(value: unknown): FloatingBallSnap | null {

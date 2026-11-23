@@ -17,6 +17,12 @@ interface MarkdownLikeView {
 	};
 }
 
+interface GenericLikeView {
+	containerEl: HTMLElement;
+	file?: TFile | null;
+	getViewType?: () => string;
+}
+
 interface SelectionWithContext {
 	selection: Selection;
 	rectOffset?: DOMRect;
@@ -49,9 +55,12 @@ export class PdfSelectionReader {
 
 	readSelection(document: Document = activeDocument): PdfTextSelection | null {
 		const settings = this.getSettings();
-		const activeContext = settings.translationScope === "global"
+		if (settings.selectionTranslationScope === "never") {
+			return null;
+		}
+		const activeContext = settings.selectionTranslationScope === "all"
 			? this.getActiveContainer()
-			: this.getActivePdfContainer();
+			: this.getActiveDocumentContainer();
 		if (!activeContext) {
 			return null;
 		}
@@ -120,15 +129,35 @@ export class PdfSelectionReader {
 		};
 	}
 
-	private getActiveContainer(): ActiveSelectionContainer | null {
-		// Try PDF first
-		const pdfContainer = this.getActivePdfContainer();
-		if (pdfContainer) {
-			return pdfContainer;
-		}
+	/** PDF and Markdown only: the "documents" scope. */
+	private getActiveDocumentContainer(): ActiveSelectionContainer | null {
+		return this.getActivePdfContainer() ?? this.getActiveMarkdownContainer();
+	}
 
-		// Then try Markdown
-		return this.getActiveMarkdownContainer();
+	/** Any active workspace view: the "all" scope. */
+	private getActiveContainer(): ActiveSelectionContainer | null {
+		return this.getActiveDocumentContainer() ?? this.getActiveGenericContainer();
+	}
+
+	/**
+	 * Fallback for plugin views (RSS readers, canvases, custom panes). The
+	 * selection still has to live inside the active view's container, so a
+	 * stray selection elsewhere is ignored.
+	 */
+	private getActiveGenericContainer(): ActiveSelectionContainer | null {
+		const activeLeaf = this.app.workspace.activeLeaf;
+		const view = activeLeaf?.view as GenericLikeView | undefined;
+		if (!view?.containerEl) {
+			return null;
+		}
+		// Never read selections from our own sidebar/manual UI.
+		if (view.getViewType?.() === "llm-translator-sidebar") {
+			return null;
+		}
+		return {
+			container: view.containerEl,
+			file: view.file ?? undefined,
+		};
 	}
 
 	private getActiveMarkdownContainer(): ActiveSelectionContainer | null {

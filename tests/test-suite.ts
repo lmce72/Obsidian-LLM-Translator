@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { PDFArray, PDFDocument, PDFName } from "pdf-lib";
-import { TFile, __setRequestUrl } from "obsidian";
+import { TFile, TFolder, __setRequestUrl } from "obsidian";
 import { PdfAnnotationWriter, pdfQuadPointsEqual } from "../src/pdfHighlight/PdfAnnotationWriter";
 import { PdfHighlightService } from "../src/pdfHighlight/PdfHighlightService";
 import { getHighlightColor } from "../src/pdfHighlight/colors";
@@ -29,18 +29,18 @@ import type { PdfOllamaTranslatorSettings, TranslationRequest } from "../src/typ
 Object.defineProperty(globalThis, "window", { value: globalThis, configurable: true });
 
 const SETTINGS: PdfOllamaTranslatorSettings = {
-	translationScope: "global",
+	selectionTranslationScope: "all",
 	translationProvider: "local-llm",
 	ollamaBaseUrl: "http://localhost:11434",
 	model: "test-model",
 	cloudApiBaseUrl: "https://api.example.com/v1",
 	cloudApiKeySecretId: "test-api-key",
 	cloudApiModel: "test-cloud-model",
-	autoTranslateSelection: true,
 	enablePopup: true,
 	enableFloatingBall: true,
 	floatingBallPosition: null,
 	floatingBallSnap: null,
+	noteTargetKind: "auto",
 	enableContextMenu: true,
 	enableTranslationCache: true,
 	restrictSourceLanguages: false,
@@ -84,43 +84,30 @@ test("translation helpers validate URLs and clean bounded output", () => {
 	assert.equal(normalizeSelectionTextForPdf("A\u00a0  B\r\nC"), "A B C");
 });
 
-test("manual bar translation remains in the popup when the sidebar is visible", async () => {
+test("selection scope never stops automatic selection translation", async () => {
 	const plugin = Object.create(PdfOllamaTranslatorPlugin.prototype) as PdfOllamaTranslatorPlugin;
 	const state = plugin as unknown as Record<string, unknown>;
 	const selection = { text: "selected text", rect: { left: 12, top: 8 }, document: {} };
 	const events: string[] = [];
-	let finishTranslation!: (value: unknown) => void;
-	state.settings = { ...SETTINGS, autoTranslateSelection: false, enableFloatingBall: false };
+	state.settings = { ...SETTINGS, selectionTranslationScope: "never" };
 	state.selectionReader = { readSelection: () => selection };
 	state.popup = {
-		showManualActions: () => events.push("manual"),
 		showLoading: () => events.push("loading"),
 		showResult: () => events.push("result"),
 		hide: () => events.push("hidden"),
+		setSelectionIsPdf: () => undefined,
 	};
-	state.translator = { translate: () => new Promise((resolve) => { finishTranslation = resolve; }) };
-	state.isSidebarVisible = () => true;
-	state.updateSidebarState = () => undefined;
+	state.translator = {
+		translate: async () => ({ sourceText: selection.text, translatedText: "result", model: "mock", elapsedMs: 1 }),
+	};
 	state.debug = () => undefined;
 	state.saveSettings = async () => undefined;
 	state.syncPopupOptions = () => undefined;
 	state.refreshSidebarViews = () => undefined;
-	const call = (name: string, ...args: unknown[]) => (state[name] as (...args: unknown[]) => unknown).apply(plugin, args);
 
-	call("scheduleSelectionTranslation", selection.document);
-	const pending = call("retryLastSelection") as Promise<void>;
-	assert.deepEqual(events, ["manual", "loading"]);
-	await plugin.updateSettings({ popupWidth: 400, popupHeight: 240 });
-	call("scheduleSelectionTranslation", selection.document);
-	assert.deepEqual(events, ["manual", "loading"]);
-	finishTranslation({ sourceText: selection.text, translatedText: "result text" });
-	await pending;
-	await plugin.updateSettings({ popupWidth: 400, popupHeight: 180, fontSize: 14 });
-	call("scheduleSelectionTranslation", selection.document);
-	assert.deepEqual(events, ["manual", "loading", "result"]);
-	await plugin.updateSettings({ targetLanguage: "ko" });
-	call("scheduleSelectionTranslation", selection.document);
-	assert.deepEqual(events, ["manual", "loading", "result", "manual"]);
+	(state.scheduleSelectionTranslation as (doc: unknown) => void).call(plugin, selection.document);
+	await new Promise((resolve) => setTimeout(resolve, 20));
+	assert.deepEqual(events, []);
 });
 
 test("disabling popup during a request keeps the completed result in the sidebar", async () => {
@@ -133,6 +120,7 @@ test("disabling popup during a request keeps the completed result in the sidebar
 		showLoading: () => events.push("loading"),
 		showResult: () => events.push("result"),
 		hide: () => events.push("hidden"),
+		setSelectionIsPdf: () => undefined,
 	};
 	state.translator = { translate: () => new Promise((resolve) => { finishTranslation = resolve; }) };
 	state.isSidebarVisible = () => false;
@@ -382,12 +370,12 @@ test("translation note creation asks once and later appends to the same source n
 	const snapshot = { sourceText: "Hello", translatedText: "你好", file: source, pageHint: 2 };
 	const target = "Papers/paper.pdf-Translation-Note.md";
 	let confirmations = 0;
-	assert.equal(await appendTranslationNote(app as never, snapshot, "", async (path) => {
+	assert.equal(await appendTranslationNote(app as never, snapshot, { kind: "auto", path: "" }, async (path) => {
 		assert.equal(path, target);
 		confirmations++;
 		return true;
 	}), target);
-	assert.equal(await appendTranslationNote(app as never, { ...snapshot, sourceText: "World", translatedText: "世界" }, "", async () => {
+	assert.equal(await appendTranslationNote(app as never, { ...snapshot, sourceText: "World", translatedText: "世界" }, { kind: "auto", path: "" }, async () => {
 		throw new Error("confirmation must not reopen");
 	}), target);
 	assert.equal(confirmations, 1);
@@ -400,6 +388,27 @@ test("translation note creation asks once and later appends to the same source n
 	assert.doesNotMatch(content, /\*\*Original\*\*|\*\*Translation\*\*|\n---\n/);
 });
 
+test("folder target keeps one translation note per source file in that folder", async () => {
+	const folder = "Translations";
+	const target = "Translations/paper.pdf-Translation-Note.md";
+	const { app, files } = noteApp({}, new TFile("Papers/paper.pdf"), [folder]);
+	let confirmed = "";
+	assert.equal(await appendTranslationNote(app as never, {
+		sourceText: "Hello", translatedText: "你好", file: new TFile("Papers/paper.pdf"),
+	}, { kind: "folder", path: folder }, async (path) => {
+		confirmed = path;
+		return true;
+	}), target);
+	assert.equal(confirmed, target);
+	assert.match(files.get(target) ?? "", /<!-- llm-translator-source: Papers%2Fpaper\.pdf -->/);
+	await appendTranslationNote(app as never, {
+		sourceText: "World", translatedText: "世界", file: new TFile("Papers/paper.pdf"),
+	}, { kind: "folder", path: folder }, async () => {
+		throw new Error("existing folder note must not ask to create");
+	});
+	assert.equal((files.get(target)?.match(/<table /g) ?? []).length, 2);
+});
+
 test("custom Markdown target collects translations from different source files", async () => {
 	const target = "Notes/Translations.md";
 	const { app, files } = noteApp({ [target]: "# My notes\n" }, new TFile("Papers/two.pdf"));
@@ -408,7 +417,7 @@ test("custom Markdown target collects translations from different source files",
 			sourceText: name,
 			translatedText: `译文 ${name}`,
 			file,
-		}, target, async () => { throw new Error("custom target must not create a file"); });
+		}, { kind: "note", path: target }, async () => { throw new Error("custom target must not create a file"); });
 	}
 	assert.equal(files.size, 1);
 	assert.match(files.get(target) ?? "", /# My notes[\s\S]*?href="Papers\/one\.pdf"[\s\S]*?href="Papers\/two\.pdf"/);
@@ -422,7 +431,7 @@ test("translation note table escapes snapshots and uses a matched highlight colo
 		translatedText: "<b>译文</b>",
 		file: new TFile('Papers/a & "b".pdf'),
 		highlightColor: "red",
-	}, target, async () => true);
+	}, { kind: "note", path: target }, async () => true);
 	const content = files.get(target) ?? "";
 	assert.match(content, /border:2px solid #ff6b6b/);
 	assert.match(content, /&#60;script&#62;alert\(&#39;x&#39;\)&#60;\/script&#62;<br>A &#38; B/);
@@ -435,7 +444,7 @@ test("default note name collision leaves the unrelated file untouched", async ()
 	const { app, files } = noteApp({ [target]: "User notes\n" });
 	await assert.rejects(appendTranslationNote(app as never, {
 		sourceText: "Hello", translatedText: "你好", file: new TFile("Papers/paper.pdf"),
-	}, "", async () => true), /different file/);
+	}, { kind: "auto", path: "" }, async () => true), /different file/);
 	assert.equal(files.get(target), "User notes\n");
 });
 
@@ -544,7 +553,7 @@ test("floating ball opens an independent manual input window", async () => {
 	assert.match(main, /setFloatingBallPosition/);
 	assert.match(main, /rightSplit\.expand\(\)/);
 	assert.match(main, /revealLeaf\(leaf\)/);
-	assert.match(main, /autoTranslateSelection: !Platform\.isMobile/);
+	assert.match(main, /selectionTranslationScope: Platform\.isMobile \? "never" : "all"/);
 	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*border-radius:\s*50%/);
 	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*background-color:\s*var\(--interactive-accent\)/);
 	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*linear-gradient/);
@@ -691,7 +700,7 @@ test("note target row centers its label against the controls", async () => {
 		readProjectFile("styles.css"),
 	]);
 
-	assert.match(settings, /\.setName\(t\("settings\.noteTarget"\)\)\s*\.setClass\("pdf-ollama-translator-setting--centered"\)/);
+	assert.match(settings, /\.setName\(t\("settings\.noteTarget"\)\)[\s\S]*?\.setClass\("pdf-ollama-translator-setting--centered"\)/);
 	assert.match(styles, /\.pdf-ollama-translator-settings \.setting-item\.pdf-ollama-translator-setting--centered\s*{[^}]*align-items: center/);
 });
 
@@ -769,14 +778,20 @@ class MemoryVault {
 	}
 }
 
-function noteApp(initial: Record<string, string> = {}, activeFile: TFile | null = null): { app: object; files: Map<string, string> } {
+function noteApp(
+	initial: Record<string, string> = {},
+	activeFile: TFile | null = null,
+	folders: string[] = [],
+): { app: object; files: Map<string, string> } {
 	const files = new Map(Object.entries(initial));
 	return {
 		files,
 		app: {
 			workspace: { getActiveFile: () => activeFile },
 			vault: {
-				getAbstractFileByPath: (path: string) => files.has(path) ? new TFile(path) : null,
+				getAbstractFileByPath: (path: string) => folders.includes(path)
+					? new TFolder(path)
+					: files.has(path) ? new TFile(path) : null,
 				create: async (path: string, content: string) => {
 					if (files.has(path)) throw new Error("already exists");
 					files.set(path, content);

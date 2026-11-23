@@ -17,7 +17,7 @@
     "enablePopup": "Auswahl-Popup aktivieren",
     "enableFloatingBall": "Schwebender Ball",
     "enableFloatingBallDesc": "Zeigt einen verschiebbaren Ball, der an Bildschirmrändern einrastet und beim Anklicken das Übersetzungsfenster öffnet.",
-    "noteTarget": "Ordner für Übersetzungsnotizen",
+    "noteTarget": "Notizort",
     "noteTargetDefault": "Pro Quelldatei",
     "chooseNote": "Notiz auswählen",
     "translationService": "Übersetzungsdienst",
@@ -57,7 +57,17 @@
     "testing": "Test läuft...",
     "enableContextMenu": "Enable right-click translate",
     "enableTranslationCache": "Cache translation results",
-    "enableTranslationCacheDesc": "Reuse the cached result for identical source text instead of calling the model again."
+    "enableTranslationCacheDesc": "Reuse the cached result for identical source text instead of calling the model again.",
+    "selectionScope": "Auswahlübersetzung",
+    "selectionScopeDesc": "Alle Ansichten schließt Plugin-Ansichten ein; Nur Dokumente beschränkt die Auswahlübersetzung auf PDF und Markdown; Nie deaktiviert sie (Seitenleiste und Ball übersetzen weiterhin manuell).",
+    "scopeAll": "Alle Ansichten",
+    "scopeDocuments": "Nur Dokumente",
+    "scopeNever": "Nie",
+    "enablePopupDesc": "Aus: Auswahlergebnisse aktualisieren nur die Seitenleiste statt des Leser-Popups.",
+    "noteTargetDesc": "Pro Quelldatei erstellt eine Notiz neben der Quelle; Ordner legt je Quelldatei eine Notiz in diesem Ordner ab; Notiz hängt alle Übersetzungen an diese eine Notiz an.",
+    "chooseFolder": "Ordner wählen",
+    "folderTarget": "Ordner",
+    "noteTargetSingle": "Notiz"
   },
   "sidebar": {
     "title": "Übersetzen",
@@ -82,7 +92,8 @@
     "addToNote": "Zur Notiz hinzufügen",
     "highlightColor": "Markierung",
     "clearAllHighlights": "Alle entfernen",
-    "clearAllHighlightsConfirm": "Alle LLM-Translator-Markierungen aus der aktuellen PDF entfernen? Dies kann nicht rückgängig gemacht werden."
+    "clearAllHighlightsConfirm": "Alle LLM-Translator-Markierungen aus der aktuellen PDF entfernen? Dies kann nicht rückgängig gemacht werden.",
+    "selectionScope": "Auswahl"
   },
   "ball": {
     "open": "Übersetzungsfenster öffnen"
