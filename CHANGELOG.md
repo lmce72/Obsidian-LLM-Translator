@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.1
+
+### Added
+
+- Separate Copy source and Copy translation icon buttons in the selection popup, each labeled for its direction.
+
+### Fixed
+
+- The selection popup Close button now activates on pointerup as well as click, and an explicit close is no longer undone by the still-selected text being translated again. Reselecting after an outside click still translates normally.
+
 ## 0.6.0
 
 ### Added

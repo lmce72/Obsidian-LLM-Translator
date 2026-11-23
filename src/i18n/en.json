@@ -125,7 +125,8 @@
     "close": "Close",
     "sourceLanguage": "Source language",
     "swapLanguage": "Swap languages",
-    "targetLanguage": "Target language"
+    "targetLanguage": "Target language",
+    "copySource": "Copy source"
   },
   "highlight": {
     "copyNote": "Copy note",

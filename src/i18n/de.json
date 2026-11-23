@@ -125,7 +125,8 @@
     "close": "Schließen",
     "sourceLanguage": "Quellsprache",
     "swapLanguage": "Sprachen tauschen",
-    "targetLanguage": "Zielsprache"
+    "targetLanguage": "Zielsprache",
+    "copySource": "Quelle kopieren"
   },
   "highlight": {
     "copyNote": "Notiz kopieren",

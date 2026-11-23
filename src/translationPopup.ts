@@ -37,6 +37,7 @@ export class TranslationPopup {
 	private languageEl: HTMLElement;
 	private actionsEl: HTMLElement;
 	private resultEl: HTMLElement;
+	private sourceText = "";
 	private lastResult = "";
 	private lastRect: DOMRect | null = null;
 	private options: PopupOptions;
@@ -130,6 +131,11 @@ export class TranslationPopup {
 		return this.rootEl.style.display !== "none";
 	}
 
+	setSourceText(text: string): void {
+		this.sourceText = text;
+		this.renderActions();
+	}
+
 	/** Highlight actions only make sense for PDF text selections. */
 	setSelectionIsPdf(value: boolean): void {
 		if (this.selectionIsPdf === value) {
@@ -160,6 +166,12 @@ export class TranslationPopup {
 	private renderActions(): void {
 		this.actionsEl.empty();
 
+		if (this.options.showCopyButton && this.sourceText) {
+			const sourceCopyButton = this.createIconButton("file-text", t("popup.copySource"));
+			sourceCopyButton.onClickEvent(async () => {
+				await navigator.clipboard.writeText(this.sourceText);
+			});
+		}
 		if (this.options.showCopyButton && this.lastResult) {
 			const copyButton = this.createIconButton("copy", t("popup.copyTranslation"));
 			copyButton.onClickEvent(async () => {
@@ -188,6 +200,26 @@ export class TranslationPopup {
 		}
 
 		const closeButton = this.createIconButton("x", t("popup.close"));
+		// Activate the close on pointerup as well; touch taps can suppress the
+		// compatibility click, and a re-render must never make Close dead.
+		let closePressed = false;
+		closeButton.onpointerdown = (event) => {
+			closePressed = true;
+			if (event.pointerType === "mouse") event.preventDefault();
+			event.stopPropagation();
+		};
+		closeButton.onpointerup = (event) => {
+			if (!closePressed) return;
+			closePressed = false;
+			if (event.button === 0) {
+				event.preventDefault();
+				event.stopPropagation();
+				this.options.onClose();
+			}
+		};
+		closeButton.onpointerleave = () => {
+			closePressed = false;
+		};
 		closeButton.onClickEvent(() => this.options.onClose());
 	}
 

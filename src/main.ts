@@ -706,6 +706,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 
 	private async translateSelection(selection: PdfTextSelection, force: boolean, fromPopup = false, bypassCache = force): Promise<void> {
 		const selectionKey = `${selection.text}:${Math.round(selection.rect.left)}:${Math.round(selection.rect.top)}`;
+		this.popup.setSourceText(selection.text);
 		this.popup.setSelectionIsPdf(Boolean(selection.file?.path.toLowerCase().endsWith(".pdf")));
 		const showPopup = fromPopup || !this.isSidebarVisible();
 		const shouldShowPopup = showPopup && this.settings.enablePopup;
@@ -874,10 +875,14 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 		return getProviderLabel(this.settings.translationProvider);
 	}
 
-	private hidePopup(): void {
+	private hidePopup(preserveSelectionKey = false): void {
 		this.cancelActiveRequest();
 		this.popup.hide();
-		this.lastSelectionKey = "";
+		// An explicit close must not be undone by a selectionchange that
+		// re-translates the still-selected text; an outside click clears this.
+		if (!preserveSelectionKey) {
+			this.lastSelectionKey = "";
+		}
 		if (this.sidebarState.status === "loading") {
 			this.updateSidebarState({ ...this.sidebarState, status: "idle", message: "" });
 		}
@@ -916,7 +921,7 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			onHighlight: () => void this.highlightActiveSelection(),
 			onRemoveHighlight: () => void this.removeActiveSelectionHighlight(),
 			onAddNote: () => void this.addPopupTranslationToNote(),
-			onClose: () => this.hidePopup(),
+			onClose: () => this.hidePopup(true),
 		};
 	}
 

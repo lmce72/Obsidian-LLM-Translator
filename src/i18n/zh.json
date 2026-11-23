@@ -125,7 +125,8 @@
     "close": "关闭",
     "sourceLanguage": "源语言",
     "swapLanguage": "交换语言",
-    "targetLanguage": "目标语言"
+    "targetLanguage": "目标语言",
+    "copySource": "复制原文"
   },
   "highlight": {
     "copyNote": "复制批注",

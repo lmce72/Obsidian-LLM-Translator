@@ -96,6 +96,7 @@ test("selection scope never stops automatic selection translation", async () => 
 		showResult: () => events.push("result"),
 		hide: () => events.push("hidden"),
 		setSelectionIsPdf: () => undefined,
+		setSourceText: () => undefined,
 	};
 	state.translator = {
 		translate: async () => ({ sourceText: selection.text, translatedText: "result", model: "mock", elapsedMs: 1 }),
@@ -121,6 +122,7 @@ test("disabling popup during a request keeps the completed result in the sidebar
 		showResult: () => events.push("result"),
 		hide: () => events.push("hidden"),
 		setSelectionIsPdf: () => undefined,
+		setSourceText: () => undefined,
 	};
 	state.translator = { translate: () => new Promise((resolve) => { finishTranslation = resolve; }) };
 	state.isSidebarVisible = () => false;
@@ -549,6 +551,11 @@ test("floating ball opens an independent manual input window", async () => {
 	assert.match(ball, /snappedEdges/);
 	assert.match(ball, /applyViewportPosition/);
 
+	assert.match(popup, /setSourceText\(text: string\)/);
+	assert.match(popup, /popup\.copySource/);
+	assert.match(popup, /popup\.copyTranslation/);
+	assert.match(popup, /closeButton\.onpointerup/);
+	assert.match(main, /hidePopup\(true\)/);
 	assert.match(main, /new FloatingBall\(/);
 	assert.match(main, /setFloatingBallPosition/);
 	assert.match(main, /rightSplit\.expand\(\)/);

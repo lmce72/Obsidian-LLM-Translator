@@ -125,7 +125,8 @@
     "close": "Kapat",
     "sourceLanguage": "Kaynak dil",
     "swapLanguage": "Dilleri değiştir",
-    "targetLanguage": "Hedef dil"
+    "targetLanguage": "Hedef dil",
+    "copySource": "Kaynağı kopyala"
   },
   "highlight": {
     "copyNote": "Notu kopyala",
