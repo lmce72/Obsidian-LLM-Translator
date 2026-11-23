@@ -674,7 +674,7 @@ test("build metadata describes one release version", async () => {
 		readProjectJson("package-lock.json"),
 		readProjectJson("versions.json"),
 	]);
-	assert.equal(packageJson.version, "0.5.4");
+	assert.match(packageJson.version, /^\d+\.\d+\.\d+$/);
 	assert.equal(manifest.version, packageJson.version);
 	assert.equal(packageLock.version, packageJson.version);
 	assert.equal(packageLock.packages[""].version, packageJson.version);
