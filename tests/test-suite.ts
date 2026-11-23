@@ -484,10 +484,11 @@ test("sidebar adapts to narrow panes without overflowing", async () => {
 });
 
 test("floating ball drags, snaps to edges, and opens the translation window", async () => {
-	const [ball, popup, main, styles, manifest] = await Promise.all([
+	const [ball, popup, main, sidebar, styles, manifest] = await Promise.all([
 		readProjectFile("src/floatingBall.ts"),
 		readProjectFile("src/translationPopup.ts"),
 		readProjectFile("src/main.ts"),
+		readProjectFile("src/sidebarView.ts"),
 		readProjectFile("styles.css"),
 		readProjectFile("manifest.json"),
 	]);
@@ -498,6 +499,10 @@ test("floating ball drags, snaps to edges, and opens the translation window", as
 	assert.match(ball, /EDGE_SNAP_DISTANCE/);
 	assert.match(ball, /this\.options\.onToggle\(\)/);
 	assert.match(ball, /this\.options\.onPositionChange\(next\)/);
+	assert.match(main, /readSelection\(\) \?\? this\.lastDocumentSelection/);
+	assert.match(main, /translateSelection\(selection, true, true, false\)/);
+	assert.match(sidebar, /language\.sourceShort/);
+	assert.match(popup, /language\.targetShort/);
 	assert.match(popup, /setAnchor\(rect: DOMRect\)/);
 	assert.match(popup, /reopen\(rect: DOMRect/);
 	assert.match(popup, /popup\.openSidebar/);
@@ -510,6 +515,8 @@ test("floating ball drags, snaps to edges, and opens the translation window", as
 	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*background-color:\s*var\(--interactive-accent\)/);
 	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*linear-gradient/);
 	assert.match(styles, /button\.pdf-ollama-translator-ball\s*{[^}]*touch-action:\s*none/);
+	assert.match(styles, /--translator-ball-size:\s*clamp\(34px, calc\(3vmin \+ 0\.75vmax\), 40px\)/);
+	assert.match(styles, /width:\s*calc\(var\(--translator-ball-size\) \* 0\.4\)/);
 	assert.equal((JSON.parse(manifest) as { isDesktopOnly?: boolean }).isDesktopOnly, false);
 });
 

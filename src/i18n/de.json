@@ -119,6 +119,8 @@
   "language": {
     "auto": "Automatisch",
     "autoShort": "Auto",
+    "sourceShort": "Von",
+    "targetShort": "An",
     "english": "Englisch",
     "german": "Deutsch",
     "french": "Französisch",

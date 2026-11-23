@@ -278,7 +278,11 @@ export class TranslationPopup {
 			attr: { "aria-label": t("popup.sourceLanguage"), title: t("popup.sourceLanguage") },
 		});
 		for (const option of SOURCE_LANGUAGE_OPTIONS) {
-			sourceSelect.createEl("option", { text: option.value === "auto" ? t("language.autoShort") : option.label, value: option.value });
+			const label = option.value === "auto" ? t("language.autoShort") : option.label;
+			sourceSelect.createEl("option", {
+				text: `${t("language.sourceShort")} ${label}`,
+				value: option.value,
+			});
 		}
 		sourceSelect.value = this.options.sourceLanguage;
 
@@ -294,7 +298,10 @@ export class TranslationPopup {
 			attr: { "aria-label": t("popup.targetLanguage"), title: t("popup.targetLanguage") },
 		});
 		for (const option of TARGET_LANGUAGE_OPTIONS) {
-			targetSelect.createEl("option", { text: option.label, value: option.value });
+			targetSelect.createEl("option", {
+				text: `${t("language.targetShort")} ${option.label}`,
+				value: option.value,
+			});
 		}
 		targetSelect.value = this.options.targetLanguage;
 

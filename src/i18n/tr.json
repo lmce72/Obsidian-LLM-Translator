@@ -119,6 +119,8 @@
   "language": {
     "auto": "Otomatik",
     "autoShort": "Otomatik",
+    "sourceShort": "Kaynak",
+    "targetShort": "Hedef",
     "english": "İngilizce",
     "german": "Almanca",
     "french": "Fransızca",

@@ -20,13 +20,16 @@
 
 /* Floating ball: accent-tinted gradient with the lucide languages icon. */
 button.pdf-ollama-translator-ball {
+	/* Scale with both viewport axes, tuned to the small purple reference
+	   circle while staying above the touch target floor. */
+	--translator-ball-size: clamp(34px, calc(3vmin + 0.75vmax), 40px);
 	position: fixed;
 	z-index: calc(var(--layer-popover) + 1);
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 48px;
-	height: 48px;
+	width: var(--translator-ball-size);
+	height: var(--translator-ball-size);
 	padding: 0;
 	border: 0;
 	border-radius: 50%;
@@ -47,8 +50,8 @@ button.pdf-ollama-translator-ball {
 }
 
 button.pdf-ollama-translator-ball svg {
-	width: 24px;
-	height: 24px;
+	width: calc(var(--translator-ball-size) * 0.4);
+	height: calc(var(--translator-ball-size) * 0.4);
 	pointer-events: none;
 }
 
@@ -91,11 +94,11 @@ button.pdf-ollama-translator-ball.is-dragging {
 	align-items: center;
 	flex: 1 1 auto;
 	min-width: 0;
-	gap: 4px;
+	gap: 3px;
 }
 
 .pdf-ollama-translator-popup__language-select {
-	width: 58px;
+	width: 62px;
 	height: 24px;
 	padding: 0 4px;
 	border: 1px solid var(--background-modifier-border);
@@ -127,7 +130,7 @@ button.pdf-ollama-translator-ball.is-dragging {
 	align-items: center;
 	justify-content: flex-end;
 	flex: 0 0 auto;
-	gap: 5px;
+	gap: 3px;
 }
 
 .pdf-ollama-translator-popup__button {
@@ -689,8 +692,22 @@ button.pdf-ollama-translator-ball.is-dragging {
 		height: calc(100% - 44px);
 	}
 
+	/* With language selects plus seven actions, one touch row overflows. */
+	.pdf-ollama-translator-popup:not(.pdf-ollama-translator-popup--actions-only) .pdf-ollama-translator-popup__header {
+		flex-wrap: wrap;
+		row-gap: 4px;
+	}
+
+	.pdf-ollama-translator-popup:not(.pdf-ollama-translator-popup--actions-only) .pdf-ollama-translator-popup__language,
+	.pdf-ollama-translator-popup:not(.pdf-ollama-translator-popup--actions-only) .pdf-ollama-translator-popup__actions {
+		flex: 1 1 100%;
+	}
+
+	.pdf-ollama-translator-popup:not(.pdf-ollama-translator-popup--actions-only) .pdf-ollama-translator-popup__body {
+		height: calc(100% - 84px);
+	}
+
 	button.pdf-ollama-translator-ball {
-		width: 56px;
-		height: 56px;
+		--translator-ball-size: clamp(38px, calc(3vmin + 0.75vmax), 44px);
 	}
 }

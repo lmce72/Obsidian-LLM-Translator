@@ -119,6 +119,8 @@
   "language": {
     "auto": "Auto",
     "autoShort": "Auto",
+    "sourceShort": "De",
+    "targetShort": "À",
     "english": "Anglais",
     "german": "Allemand",
     "french": "Français",

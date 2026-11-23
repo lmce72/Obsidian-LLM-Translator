@@ -946,6 +946,14 @@ export default class PdfOllamaTranslatorPlugin extends Plugin {
 			this.popup.hide();
 			return;
 		}
+		// A click with a live selection behaves like selection translation:
+		// translate now and open the window beside the ball.
+		const selection = this.selectionReader.readSelection() ?? this.lastDocumentSelection ?? this.lastSelection;
+		if (selection && this.settings.enablePopup) {
+			this.lastSelection = selection;
+			void this.translateSelection(selection, true, true, false);
+			return;
+		}
 		const anchor = this.floatingBall?.getRect() ?? this.getViewportCenterRect();
 		this.popup.reopen(anchor, this.floatingBall?.getDocument() ?? activeDocument);
 	}

@@ -119,6 +119,8 @@
   "language": {
     "auto": "自動",
     "autoShort": "自動",
+    "sourceShort": "原文",
+    "targetShort": "訳文",
     "english": "英語",
     "german": "ドイツ語",
     "french": "フランス語",

@@ -119,6 +119,8 @@
   "language": {
     "auto": "自动识别",
     "autoShort": "自动",
+    "sourceShort": "源",
+    "targetShort": "译",
     "english": "英语",
     "german": "德语",
     "french": "法语",

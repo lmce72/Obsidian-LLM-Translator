@@ -123,7 +123,10 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 			{ value: "es", label: t("language.spanish") },
 			{ value: "tr", label: t("language.turkish") },
 		]) {
-			sourceEl.createEl("option", { text: option.label, value: option.value });
+			sourceEl.createEl("option", {
+				text: `${t("language.sourceShort")}: ${option.label}`,
+				value: option.value,
+			});
 		}
 		sourceEl.value = this.plugin.settings.sourceLanguage;
 		sourceEl.onchange = () => {
@@ -149,7 +152,10 @@ export class PdfOllamaTranslatorSidebarView extends ItemView {
 			{ value: "es", label: t("language.spanish") },
 			{ value: "tr", label: t("language.turkish") },
 		]) {
-			targetEl.createEl("option", { text: option.label, value: option.value });
+			targetEl.createEl("option", {
+				text: `${t("language.targetShort")}: ${option.label}`,
+				value: option.value,
+			});
 		}
 		targetEl.value = this.plugin.settings.targetLanguage;
 		targetEl.onchange = () => {
